@@ -296,7 +296,7 @@ def convert(score_sort_toplist,target_label_pairs,test_label_pairs,node_names,tr
             else:
                 test_edge.append(0)
                 new_edge.append(1)
-                '''
+        '''
         for i in score_sort_toplist:
             prediction_label_pair=(i[1],i[2])
             #if prediction_label_pair in train_label_pairs: #prediction_label_pairがtrainに含まれれば、何もしない
