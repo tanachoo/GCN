@@ -23,7 +23,7 @@ class dotdict(dict):
     def __setstate__(self, dict):
         self.__dict__ = dict
 
-##Build new##
+        
 def build_node_name(filename):
     """ To convert node ID to gene/chemical name """
 
