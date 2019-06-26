@@ -1,6 +1,6 @@
 # Author: yoshi
 # Write start: 5/13/2019
-# Updated: 6/24/2019
+# Updated: 6/2/2019
 
 ## Script for converting prediction score to table
 
@@ -379,7 +379,6 @@ if __name__ == '__main__':
     # set start time
     start_time=time.time()
 
-
     # node names
     node_names=build_node_name(args.node) 
 
@@ -397,6 +396,7 @@ if __name__ == '__main__':
     print('#target_label_pairs: ',len(target_label_pairs))
     print('#train_label_pairs: ',len(train_label_pairs))
     print('#test_label_pairs: ',len(test_label_pairs))
+
     # sort with predisction score
     score_sort_toplist=sort_prediction_score(args.result,args.cv,target_label_pairs,test_label_pairs,args.scorerank,args.train)
 
