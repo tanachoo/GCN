@@ -100,7 +100,7 @@ def build_target_label_pairs(filename): #args.dataset (input data jbl file)
 
     return target_label_pairs
     
-    def sort_prediction_score(filename,cv,target_label_pairs,test_label_pairs,scorerank,train):
+def sort_prediction_score(filename,cv,target_label_pairs,test_label_pairs,scorerank,train):
     """ Sort prediction result array matrix and Set threshold """
     print('\n== Sort predisction score ==')
 
@@ -121,15 +121,9 @@ def build_target_label_pairs(filename): #args.dataset (input data jbl file)
     dim_col=matrix.shape[1]
     ## Store prediction score as a set of (score,row,col) tuple
     score_row_col=[(matrix[row,col],row,col) for row in range(dim_row) for col in range(row+1, dim_col)]
-    '''
-    for row in range(dim_row): # row:0-31002
-        for col in range(row+1, dim_col): # skip diagonal component, col:row+1 - 31002
-            src=(matrix[row,col],row,col) # prep tuple(score,row,col)
-            #src=(round(matrix[row,col],4),row,col) # prep tuple(score,row,col)
-            score_row_col.append(src) # Add tuple(score,row,col) to the list
-    '''
+
     print('#scores as adopted: ',len(score_row_col)) # 480577503
-    print('(should be 480577503...)')
+    #print('(should be 480577503...)')
 
     ## Here need to delete CHEBI ID
     ## remove row CHEBI
@@ -139,9 +133,9 @@ def build_target_label_pairs(filename): #args.dataset (input data jbl file)
     print('#scores as adopted post removal of CHEBI nodes: ',len(row_col_CHEBI_deleted))
     
     ## sort scores with descending order
-    print('\nSort scores and Pick top 500000...')
+    print('\nSort scores and Pick top 2000000...')
     row_col_CHEBI_deleted.sort(reverse=True) # Sort list based on "score" with a decending order
-    score_sort=row_col_CHEBI_deleted[:500000] # Cut top list using arbitrary threshold
+    score_sort=row_col_CHEBI_deleted[:2000000] # Cut top list using arbitrary threshold
     #score_sort=sorted(row_col_CHEBI_deleted,reverse=True) # this "sorted" method is slower
     #score_sort=score_sort[:3000000]
     print('okay...done.')
@@ -163,25 +157,13 @@ def build_target_label_pairs(filename): #args.dataset (input data jbl file)
         print('Completed to prep prediction score-ordered list including train labels.')
 
         return score_sort_toplist
-
-
+    
     else:
         print('\nTrain labels are excluded for preparing score-ordred list.')
 
         score_tmp=[]
         score_tmp=[i for i in score_sort if (i[1],i[2]) not in train_label_pairs]
 
-        '''
-        for i in score_sort:
-            src=i
-            prediction_label_pair=(i[1],i[2])
-
-            if prediction_label_pair not in train_label_pairs:
-                score_tmp.append(src)
-
-            else:
-                pass
-        '''
         ## sort with a decending order
         score_tmp.sort(reverse=True)
         print('#scores post removal of train labels: ',len(score_tmp))
@@ -191,18 +173,7 @@ def build_target_label_pairs(filename): #args.dataset (input data jbl file)
         print('(should be same values...)')
 
         print('Completed to prep prediction score-ordered list w/o train labels.')
-
-        '''
-        score_sort_tmp=sorted(score_tmp,reverse=True)
-        print('\n#scores post removal of train labels: ',len(score_sort_tmp))
-        print('Cutoff top list...')
-        score_sort_toplist=score_sort_tmp[:scorerank] #args.scorerank: Select top score ranking to export
-        print('score rank cutoff value: {0}'.format(scorerank))
-        print('#src_score_sort_toplist: ',len(score_sort_toplist))
-        print('(should be same values...)')
-        print('Completed to prep prediction score-ordered list w/o train labels.')
-        '''
-
+        
         return score_sort_toplist
         
  def convert(score_sort_toplist,target_label_pairs,test_label_pairs,node_names,train):
@@ -214,8 +185,6 @@ def build_target_label_pairs(filename): #args.dataset (input data jbl file)
     cols=[]
     gene1=[]
     gene2=[]
-    #prediction_label_pairs=[]
-    #target_edge=[]
     train_edge=[]
     test_edge=[]
     new_edge=[]
@@ -249,32 +218,7 @@ def build_target_label_pairs(filename): #args.dataset (input data jbl file)
                 train_edge.append(0)
                 test_edge.append(0)
                 new_edge.append(1)
-
-        '''
-        for i in score_sort_toplist:
-            scores.append(i[0])
-            rows.append(i[1])
-            cols.append(i[2])
-            gene1.append(node_names[i[1]])
-            gene2.append(node_names[i[2]])
-            prediction_label_pair=(i[1],i[2])
-            #prediction_label_pairs.append(prediction_label_pair)
-
-            if prediction_label_pair in target_label_pairs: # prefiction label pairがtarget label pairs集合に含まれるか
-                #target_edge.append(1) # 含まれれば、target edgeは"1"、new_edgeは"0"
-                new_edge.append(0) 
-                if prediction_label_pair in test_label_pairs: # そして、prediction labelが、target label集合に含まれ、test setに含まれるか
-                    test_edge.append(1) # 含まれれば、test edgeは"1"、train edgeは"0"
-                    train_edge.append(0)
-                else:
-                    test_edge.append(0)
-                    train_edge.append(1)
-            else:
-                #target_edge.append(0)
-                train_edge.append(0)
-                test_edge.append(0)
-                new_edge.append(1)
-        '''
+                
         print('Completed conversion.')
         return rows,cols,gene1,gene2,scores,train_edge,test_edge,new_edge
         
@@ -298,26 +242,6 @@ def build_target_label_pairs(filename): #args.dataset (input data jbl file)
                 test_edge.append(0)
                 new_edge.append(1)
 
-        '''
-        for i in score_sort_toplist:
-            prediction_label_pair=(i[1],i[2])
-            #if prediction_label_pair in train_label_pairs: #prediction_label_pairがtrainに含まれれば、何もしない
-            #    pass
-            #else: # prediction_label_pairがtrainに含まれない場合、、
-            scores.append(i[0])
-            rows.append(i[1])
-            cols.append(i[2])
-            gene1.append(node_names[i[1]])
-            gene2.append(node_names[i[2]])
-            train_edge.append(0)
-            if prediction_label_pair in test_label_pairs: #prediction_label_pairがtestに含まれれば、
-                test_edge.append(1)
-                new_edge.append(0)
-            else:
-                test_edge.append(0)
-                new_edge.append(1)
-        '''
-
         print('Completed conversion.')
         return rows,cols,gene1,gene2,scores,train_edge,test_edge,new_edge
         
@@ -332,7 +256,6 @@ def process_table(rows,cols,gene1,gene2,scores,train_edge,test_edge,new_edge):
     table['gene1']=gene1
     table['gene2']=gene2
     table['score']=scores
-    #table['target_edge']=target_edge
     table['train_edge']=train_edge
     table['test_edge']=test_edge
     table['new_edge']=new_edge
@@ -346,7 +269,6 @@ def process_table(rows,cols,gene1,gene2,scores,train_edge,test_edge,new_edge):
     table_sort_score=table.sort_values(by='score',ascending=False)
 
     # change column order
-    #table_sort_score=table_sort_score[['row','col','gene1','gene2','score','score_ranking','target_edge','train_edge','test_edge','new_edge']]
     table_sort_score=table_sort_score[['row','col','gene1','gene2','score','score_ranking','train_edge','test_edge','new_edge']]
     
     print('#final table shape: ',table.shape)
@@ -382,39 +304,30 @@ if __name__ == '__main__':
 
     # node names
     #node_names=build_node_name(args.node)
-    '''
-    f1 = open('./node_names.pkl', 'wb')
-    pickle.dump(node_names, f1)
-    '''
+    #f1 = open('./node_names.pkl', 'wb')
+    #pickle.dump(node_names, f1)
+    
     o1 = open('./node_names.pkl','rb')
     node_names = pickle.load(o1)
-    #print(node_names)
     #print(len(node_names))
     
     # build test label pairs
     #test_label_pairs=build_test_label_pairs(args.result,args.cv)
-    '''
-    f2 = open('./test_label_pairs.pkl', 'wb')
-    pickle.dump(test_label_pairs, f2)
-    '''
+    #f2 = open('./test_label_pairs.pkl', 'wb')
+    #pickle.dump(test_label_pairs, f2)
+    
     o2 = open('./test_label_pairs.pkl','rb')
     test_label_pairs = pickle.load(o2)
-    #print(test_label_pairs)
-    #print(len(test_label_pairs))
-    
+    #print(len(test_label_pairs))    
 
     # build all prediction target pairs
     #target_label_pairs=build_target_label_pairs(args.dataset)
-    '''
-    f3 = open('./target_label_pairs.pkl', 'wb')
-    pickle.dump(target_label_pairs, f3)
-    '''
+    #f3 = open('./target_label_pairs.pkl', 'wb')
+    #pickle.dump(target_label_pairs, f3)
+    
     o3 = open('./target_label_pairs.pkl','rb')
     target_label_pairs = pickle.load(o3)
-    #print(target_label_pairs)
     #print(len(target_label_pairs))
-    
-
     
     # train label pair
     train_label_pairs=list(set(target_label_pairs) - set(test_label_pairs))
