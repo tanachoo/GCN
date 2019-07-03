@@ -21,3 +21,6 @@ You can change input result file whatever you want to try from above four types 
 NOTE: You can just select below two args. Please stay other args commands as above.  
 `--result`  
 `--output` (output file name)
+
+Result (output file)  
+See: `sample_output.txt`
