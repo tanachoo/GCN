@@ -1,7 +1,7 @@
 # Program for convertion of prediction score on ip/distmult/gcn
 
 Prepare
-1. You need to put three pickle data  
+1. You need to put three pickle data on a same directory where the main program(prediction_score_spare2.py) stays.  
 `node_names.pkl`
 `test_label_pairs.pkl`
 `target_label_pairs.pkl`  
