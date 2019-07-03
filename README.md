@@ -12,7 +12,7 @@ Prepare
 `test_score_matrix_250000.pkl` (matrix:500×500)  
 `test_score_matrix_1000000.pkl` (matrix:1000×1000, approximately 30 min to complete to run this script)  
 
-Run  
+Run (Use: prediction_score_spare2.py)  
 `python prediction_score_spare2.py --result ./test_score_matrix_10000.pkl --dataset ./dataset.jbl --node ./dataset_node.csv --cv 0 --scorerank 1000000 --train true --output ./score.txt`
 
 You can change input result file whatever you want to try from above dataset.  
