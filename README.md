@@ -14,6 +14,7 @@ Prepare
 
 Run (Use: prediction_score_spare2.py)  
 `python prediction_score_spare2.py --result ./test_score_matrix_10000.pkl --dataset ./dataset.jbl --node ./dataset_node.csv --cv 0 --scorerank 1000000 --train true --output ./score.txt`
+(Ignore: `--dataset, --node, --cv, --scorerank, --train` (keep as they are))
 
 You can change input results file whatever you want to try from above four types of dataset.  
 `--result ./test_score_matrix_*10000*.pkl`
