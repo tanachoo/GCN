@@ -8,7 +8,7 @@ Prepare
 
 2. Select result test data  
 `test_score_matrix_10000.pkl` (matrix:100×100, approximately 20 sec to complete this script)  
-`test_score_matrix_90000.pkl` (matrix:300×300)  
+`test_score_matrix_90000.pkl` (matrix:300×300, approximately 3 min to complete this script)  
 `test_score_matrix_250000.pkl` (matrix:500×500)  
 `test_score_matrix_1000000.pkl` (matrix:1000×1000, approximately 30 min to complete this script)  
 
