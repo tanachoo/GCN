@@ -159,58 +159,61 @@ def sort_prediction_score(filename, cv, target_label_pairs, test_label_pairs, sc
         return score_sort_toplist
 
 
-def convert(score_sort_toplist, target_label_pairs, test_label_pairs, node_names, train,
-            scores, rows, cols, gene1, gene2, train_edge, test_edge, new_edge):
-    """ let score-sorted list [(score,row,col),...] convert to table """
+def convert(score_sort_toplist, target_label_pairs, test_label_pairs, node_names, train, total_list):
+    """
+    let score-sorted list [(score,row,col),...] convert to table
+    total_list = (scores, rows, cols, gene1, gene2, train_edge, test_edge, new_edge)
+    """
     print('\n== Start convesion of prediction scores ==')
     train_label_pairs = list(set(target_label_pairs) - set(test_label_pairs))
 
     if train == 'true':
         print('Train labels are included.')
         for i in score_sort_toplist:
-            scores.append(i[0])
+            scores = i[0]
             row = i[1]
-            rows.append(row)
-            gene1.append(node_names[row])
+            gene1 = node_names[row]
             col = i[2]
-            cols.append(col)
-            gene2.append(node_names[col])
+            gene2 = node_names[col]
             prediction_label_pair = (row, col)
 
             if prediction_label_pair in target_label_pairs:  # To see if "prefiction label pair" is in a set of "target label pairs"
-                new_edge.append(0)  # If it's true, add "0" at new_edge, which means that "prediction label pair" is not new edge. Otherwise, add "1" at new_edge.
+                # new_edge = 0  # If it's true, add "0" at new_edge, which means that "prediction label pair" is not new edge. Otherwise, add "1" at new_edge.
                 if prediction_label_pair in test_label_pairs:  # And, to see if "predoction_label_pair" is in a set of "test label pairs"
-                    test_edge.append(1)  # If it's ture, add "1" at test_edge and "0" at train_edge
-                    train_edge.append(0)
+                    # test_edge = 1  # If it's ture, add "1" at test_edge and "0" at train_edge
+                    # train_edge = 0
+                    total_list.append([scores, row, col, gene1, gene2, 0, 1, 0])
                 else:
-                    test_edge.append(0)  # Oherwise, add "0" at test_edge and "1" at train_edge
-                    train_edge.append(1)
+                    # test_edge = 0  # Oherwise, add "0" at test_edge and "1" at train_edge
+                    # train_edge = 1
+                    total_list.append([scores, row, col, gene1, gene2, 1, 0, 0])
             else:
-                train_edge.append(0)
-                test_edge.append(0)
-                new_edge.append(1)
+                # train_edge = 0
+                # test_edge = 0
+                # new_edge = 1
+                total_list.append([scores, row, col, gene1, gene2, 0, 0, 1])
 
         print('Completed conversion.')
         # return rows,cols,gene1,gene2,scores,train_edge,test_edge,new_edge
     else:
         print('Train labels are excluded.')
-        train_edge = [0 for _ in range(len(score_sort_toplist))]
+        # train_edge = [0 for _ in range(len(score_sort_toplist))]
         for i in score_sort_toplist:
-            scores.append(i[0])
+            scores = i[0]
             row = i[1]
-            rows.append(row)
-            gene1.append(node_names[row])
+            gene1 = node_names[row]
             col = i[2]
-            cols.append(col)
-            gene2.append(node_names[col])
-            prediction_label_pair = (i[1], i[2])
+            gene2 = node_names[col]
+            prediction_label_pair = (row, col)
 
             if prediction_label_pair in test_label_pairs:  # To see if "prediction label pair" is in a set "prediction_label_pair"
-                test_edge.append(1)  # If it's ture, add "1" at test_edge and "0" at new_edge
-                new_edge.append(0)
+                # test_edge.append(1)  # If it's ture, add "1" at test_edge and "0" at new_edge
+                # new_edge.append(0)
+                total_list.append([scores, row, col, gene1, gene2, 0, 1, 0])
             else:
-                test_edge.append(0)
-                new_edge.append(1)
+                # test_edge.append(0)
+                # new_edge.append(1)
+                total_list.append([scores, row, col, gene1, gene2, 0, 0, 1])
 
         print('Completed conversion.')
         # return rows,cols,gene1,gene2,scores,train_edge,test_edge,new_edge
@@ -310,16 +313,23 @@ def main():
     score_sort_toplist = sort_prediction_score(args.result, args.cv, target_label_pairs, test_label_pairs,
                                                args.scorerank, args.train)
     # convert score for dataframe
-    n_proc = 10
+    n_proc = 4
     pool = Pool(processes=n_proc)
     split_score_sort_toplist = list(split_list(score_sort_toplist, n_proc))
     with Manager() as manager:
-        scores, rows, cols, gene1, gene2, train_edge, test_edge, new_edge = [manager.list() for _ in range(8)]
+        # scores, rows, cols, gene1, gene2, train_edge, test_edge, new_edge = [manager.list() for _ in range(8)]
+        total_list = manager.list()
         convert_ = partial(convert, target_label_pairs=target_label_pairs, test_label_pairs=test_label_pairs,
-                           node_names=node_names, train=args.train, scores=scores, rows=rows, cols=cols, gene1=gene1,
-                           gene2=gene2, train_edge=train_edge, test_edge=test_edge, new_edge=new_edge)
+                           node_names=node_names, train=args.train, total_list=total_list)
         pool.map(convert_, split_score_sort_toplist)
-
+        scores = [l[0] for l in total_list]
+        rows = [l[1] for l in total_list]
+        cols = [l[2] for l in total_list]
+        gene1 = [l[3] for l in total_list]
+        gene2 = [l[4] for l in total_list]
+        train_edge = [l[5] for l in total_list]
+        test_edge = [l[6] for l in total_list]
+        new_edge = [l[7] for l in total_list]
         print(f'\n#rows: {len(rows)}\n'
               f'#cols: {len(cols)}\n'
               f'#gene1: {len(gene1)}\n'
