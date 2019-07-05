@@ -176,7 +176,7 @@ def sort_prediction_score(filename,cv,target_label_pairs,test_label_pairs,scorer
         
         return score_sort_toplist
         
- def convert(score_sort_toplist,target_label_pairs,test_label_pairs,node_names,train):
+def convert(score_sort_toplist,target_label_pairs,test_label_pairs,node_names,train):
     """ let score-sorted list [(score,row,col),...] convert to table """
     print('\n== Start convesion of prediction scores ==')
 
@@ -275,8 +275,9 @@ def process_table(rows,cols,gene1,gene2,scores,train_edge,test_edge,new_edge):
     print('Completed processing to build a table.')
 
     return table_sort_score
-    
-if __name__ == '__main__':
+
+
+def main():
 
     # set argparse
     parser=argparse.ArgumentParser()
@@ -306,29 +307,29 @@ if __name__ == '__main__':
     #node_names=build_node_name(args.node)
     #f1 = open('./node_names.pkl', 'wb')
     #pickle.dump(node_names, f1)
-    
+
     o1 = open('./node_names.pkl','rb')
     node_names = pickle.load(o1)
     #print(len(node_names))
-    
+
     # build test label pairs
     #test_label_pairs=build_test_label_pairs(args.result,args.cv)
     #f2 = open('./test_label_pairs.pkl', 'wb')
     #pickle.dump(test_label_pairs, f2)
-    
+
     o2 = open('./test_label_pairs.pkl','rb')
     test_label_pairs = pickle.load(o2)
-    #print(len(test_label_pairs))    
+    #print(len(test_label_pairs))
 
     # build all prediction target pairs
     #target_label_pairs=build_target_label_pairs(args.dataset)
     #f3 = open('./target_label_pairs.pkl', 'wb')
     #pickle.dump(target_label_pairs, f3)
-    
+
     o3 = open('./target_label_pairs.pkl','rb')
     target_label_pairs = pickle.load(o3)
     #print(len(target_label_pairs))
-    
+
     # train label pair
     train_label_pairs=list(set(target_label_pairs) - set(test_label_pairs))
 
@@ -337,13 +338,13 @@ if __name__ == '__main__':
     print('#target_label_pairs: ',len(target_label_pairs))
     print('#train_label_pairs: ',len(train_label_pairs))
     print('#test_label_pairs: ',len(test_label_pairs))
-    
+
     # sort with predisction score
     score_sort_toplist=sort_prediction_score(args.result,args.cv,target_label_pairs,test_label_pairs,args.scorerank,args.train)
 
     # convert score for dataframe
     rows,cols,gene1,gene2,scores,train_edge,test_edge,new_edge = convert(score_sort_toplist,target_label_pairs,test_label_pairs,node_names,args.train)
-    
+
     print('\n#rows: ',len(rows))
     print('#cols: ',len(cols))
     print('#gene1: ',len(gene1))
@@ -352,21 +353,22 @@ if __name__ == '__main__':
     print('#train_edge: ',len(train_edge))
     print('#test_edge: ',len(test_edge))
     print('#new_edge: ',len(new_edge))
-    
+
     # process table
     table_sort_score = process_table(rows,cols,gene1,gene2,scores,train_edge,test_edge,new_edge)
-    
+
     # write table
     print('\n== Export the processed result as txt file ==')
     print('output file path: '+args.output)
     with open(args.output, 'w') as f:
         table_sort_score.to_csv(f,sep='\t',header=True,index=False)
-    
+
     # measure time
     elapsed_time=time.time() - start_time
     print('\n#time:{0}'.format(elapsed_time)+' sec')
 
     print('-- fin --\n')
-    
-    
-    
+
+
+if __name__ == '__main__':
+    main()
