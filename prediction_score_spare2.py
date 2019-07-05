@@ -97,16 +97,15 @@ def sort_prediction_score(filename, cv, target_label_pairs, test_label_pairs, sc
     print('\n== Sort predisction score ==')
     # Load data
     print(f'load: {filename}')
-    f = open(filename, 'rb')  # add for test
-    result_data = pickle.load(f)  # add for test
+    with open(filename, 'rb') as f:  # add for test
+        result_data = pickle.load(f)  # add for test
     # result_data = joblib.load(filename)
-    print('cv fold: {0}'.format(cv))
+    print(f'cv fold: {cv}')
     # prediction = result_data[cv]['prediction_data']
     # matrix = prediction[0]
     matrix = result_data  # add for test
     print(f'prediction score matrix shape: {matrix.shape}\n,'
           f'\nprep list of [(score,row,col),(),(),,,,] from prediction score results matrix...')
-    score_row_col = []
     dim_row = matrix.shape[0]
     dim_col = matrix.shape[1]
     # Store prediction score as a set of (score,row,col) tuple
@@ -130,8 +129,6 @@ def sort_prediction_score(filename, cv, target_label_pairs, test_label_pairs, sc
     print('okay...done.')
 
     # Prep target,test,train label list
-    target_label_pairs = target_label_pairs
-    test_label_pairs = test_label_pairs
     train_label_pairs = list(set(target_label_pairs) - set(test_label_pairs))
     
     if train == 'true':
@@ -223,7 +220,6 @@ def process_table(rows, cols, gene1, gene2, scores, train_edge, test_edge, new_e
     # Prep pandas dataframe section 
     print('\n== Process curated prediction score to build a table ==')
     table = pd.DataFrame()
-
     # Add columns to dataframe table
     table['row'] = pd.Series(rows)
     table['col'] = pd.Series(cols)
@@ -234,18 +230,14 @@ def process_table(rows, cols, gene1, gene2, scores, train_edge, test_edge, new_e
     table['test_edge'] = pd.Series(test_edge)
     table['new_edge'] = pd.Series(new_edge)
     print('#table shape: ', table.shape)
-
     # assign score ranking
     table = table.assign(score_ranking=len(table.score)-stats.rankdata(table.score, method='max')+1)
-
     # sort table with high score order
     print('\nsort the table with score-descending order...')
     table_sort_score = table.sort_values(by='score', ascending=False)
-
     # change column order
     table_sort_score = table_sort_score[['row', 'col', 'gene1', 'gene2', 'score', 'score_ranking', 'train_edge',
                                          'test_edge', 'new_edge']]
-    
     print(f'#final table shape: {table.shape}\n'
           f'Completed processing to build a table.')
     return table_sort_score
@@ -285,9 +277,9 @@ def main():
     # node_names = build_node_name(args.node)
     # f1 = open('./node_names.pkl', 'wb')
     # pickle.dump(node_names, f1)
-
-    o1 = open('./node_names.pkl', 'rb')
-    node_names = pickle.load(o1)
+    with open("./node_names.pkl", "rb") as o1, open("./test_label_pairs.pkl", "rb") as o2,\
+            open('./target_label_pairs.pkl', 'rb') as o3:
+        node_names = pickle.load(o1)
     # print(len(node_names))
 
     # build test label pairs
@@ -295,8 +287,7 @@ def main():
     # f2 = open('./test_label_pairs.pkl', 'wb')
     # pickle.dump(test_label_pairs, f2)
 
-    o2 = open('./test_label_pairs.pkl', 'rb')
-    test_label_pairs = pickle.load(o2)
+        test_label_pairs = pickle.load(o2)
     # print(len(test_label_pairs))
 
     # build all prediction target pairs
@@ -304,8 +295,7 @@ def main():
     # f3 = open('./target_label_pairs.pkl', 'wb')
     # pickle.dump(target_label_pairs, f3)
 
-    o3 = open('./target_label_pairs.pkl', 'rb')
-    target_label_pairs = pickle.load(o3)
+        target_label_pairs = pickle.load(o3)
     # print(len(target_label_pairs))
 
     # train label pair
