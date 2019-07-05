@@ -277,19 +277,16 @@ def process_table(rows,cols,gene1,gene2,scores,train_edge,test_edge,new_edge):
     return table_sort_score
 
 
-def main():
-
-    # set argparse
-    parser=argparse.ArgumentParser()
-    parser.add_argument('--result',type=str) #input result: gcn_cv.jbl
-    parser.add_argument('--dataset',type=str) #input dataset: dataset.jbl
-    parser.add_argument('--node',type=str) #input dataset node: dataset_node.csv
-    parser.add_argument('--cv',default=0,type=int) #cross validation: select 0,1,2,3,4
-    parser.add_argument('--output',type=str) # output:score.txt
-    parser.add_argument('--scorerank',default=10000,type=int) # Select score ranking from 1 ~ score_cutoff_value
-    parser.add_argument('--train',default='false',type=str) # default: exclude train label at score ranking list
-    args=parser.parse_args()
-
+def get_parser():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--result', type=str, help="input result: gcn_cv.jbl")
+    parser.add_argument('--dataset', type=str, help="input dataset: dataset.jbl")
+    parser.add_argument('--node', type=str, help="input dataset node: dataset_node.csv")
+    parser.add_argument('--cv', default=0, type=int, help="cross validation: select 0,1,2,3,4")
+    parser.add_argument('--output', type=str, help="output:score.txt")
+    parser.add_argument('--scorerank', default=10000, type=int, help='pick score ranking from 1 to score_cutoff_value')
+    parser.add_argument('--train', default='false', type=str, help="default: exclude train label at score ranking list")
+    args = parser.parse_args()
     print('\n== args summary ==')
     print('args result: '+args.result)
     print('args dataset: '+args.dataset)
@@ -298,7 +295,11 @@ def main():
     print('args output: '+args.output)
     print('args score rank: {0}'.format(args.scorerank))
     print('args train: '+args.train)
+    return args
 
+
+def main():
+    args = get_parser()
     # set start time
     start_time=time.time()
 
