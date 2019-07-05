@@ -8,14 +8,14 @@
 # --node ./processed_data/target0_20190425/dataset_node.csv --cv 0 --scorerank 15000 --train true --output ./pool_result/target0_20190425/score.txt
 
 import joblib
-import numpy as np
 import pandas as pd
 import time
 import argparse
 from scipy import stats
-from multiprocessing import Pool
-import multiprocessing as mp
+from multiprocessing import Pool, Manager
+from functools import partial
 import pickle
+
 
 class dotdict(dict):
     __getattr__ = dict.get
@@ -25,6 +25,7 @@ class dotdict(dict):
         return self.__dict__
     def __setstate__(self, dict):
         self.__dict__ = dict
+
 
 def build_node_name(filename):
     """ To convert node ID to gene/chemical name """
@@ -42,6 +43,7 @@ def build_node_name(filename):
     print('#node_names: ',len(node_names))
 
     return node_names
+
 
 def build_test_label_pairs(filename,cv):
     """ To make test label pair list """
@@ -73,6 +75,7 @@ def build_test_label_pairs(filename,cv):
 
     return test_label_pairs
 
+
 def build_target_label_pairs(filename): #args.dataset (input data jbl file)
     """To make all prediction target (train+test) label pair list"""
     # import all edge label data (input data for establish model, train + test) 
@@ -99,7 +102,8 @@ def build_target_label_pairs(filename): #args.dataset (input data jbl file)
     print('okay... Completed to prep target label list.')
 
     return target_label_pairs
-    
+
+
 def sort_prediction_score(filename,cv,target_label_pairs,test_label_pairs,scorerank,train):
     """ Sort prediction result array matrix and Set threshold """
     print('\n== Sort predisction score ==')
@@ -175,64 +179,52 @@ def sort_prediction_score(filename,cv,target_label_pairs,test_label_pairs,scorer
         print('Completed to prep prediction score-ordered list w/o train labels.')
         
         return score_sort_toplist
-        
-def convert(score_sort_toplist,target_label_pairs,test_label_pairs,node_names,train):
+
+
+def convert(score_sort_toplist, target_label_pairs, test_label_pairs, node_names, train,
+            scores, rows, cols, gene1, gene2, train_edge, test_edge, new_edge ):
     """ let score-sorted list [(score,row,col),...] convert to table """
     print('\n== Start convesion of prediction scores ==')
+    train_label_pairs = list(set(target_label_pairs) - set(test_label_pairs))
 
-    scores=[]
-    rows=[]
-    cols=[]
-    gene1=[]
-    gene2=[]
-    train_edge=[]
-    test_edge=[]
-    new_edge=[]
-
-    node_names=node_names
-    target_label_pairs=target_label_pairs
-    test_label_pairs=test_label_pairs
-    train_label_pairs=list(set(target_label_pairs) - set(test_label_pairs))
-
-    if train=='true':
+    if train == 'true':
         print('Train labels are included.')
-
-        scores=[i[0] for i in score_sort_toplist]        
-        rows=[i[1] for i in score_sort_toplist]
-        cols=[i[2] for i in score_sort_toplist]
-        gene1=[node_names[i[1]] for i in score_sort_toplist]
-        gene2=[node_names[i[2]] for i in score_sort_toplist]
-
         for i in score_sort_toplist:
-            prediction_label_pair=(i[1],i[2])
+            scores.append(i[0])
+            row = i[1]
+            rows.append(row)
+            gene1.append(node_names[row])
+            col = i[2]
+            cols.append(col)
+            gene2.append(node_names[col])
+            prediction_label_pair = (row, col)
 
-            if prediction_label_pair in target_label_pairs: # To see if "prefiction label pair" is in a set of "target label pairs"
-                new_edge.append(0) # If it's true, add "0" at new_edge, which means that "prediction label pair" is not new edge. Otherwise, add "1" at new_edge.
-                if prediction_label_pair in test_label_pairs: # And, to see if "predoction_label_pair" is in a set of "test label pairs"
-                    test_edge.append(1) # If it's ture, add "1" at test_edge and "0" at train_edge
+            if prediction_label_pair in target_label_pairs:  # To see if "prefiction label pair" is in a set of "target label pairs"
+                new_edge.append(0)  # If it's true, add "0" at new_edge, which means that "prediction label pair" is not new edge. Otherwise, add "1" at new_edge.
+                if prediction_label_pair in test_label_pairs:  # And, to see if "predoction_label_pair" is in a set of "test label pairs"
+                    test_edge.append(1)  # If it's ture, add "1" at test_edge and "0" at train_edge
                     train_edge.append(0)
                 else:
-                    test_edge.append(0) # Oherwise, add "0" at test_edge and "1" at train_edge
+                    test_edge.append(0)  # Oherwise, add "0" at test_edge and "1" at train_edge
                     train_edge.append(1)
             else:
                 train_edge.append(0)
                 test_edge.append(0)
                 new_edge.append(1)
-                
+
         print('Completed conversion.')
-        return rows,cols,gene1,gene2,scores,train_edge,test_edge,new_edge
-        
+        # return rows,cols,gene1,gene2,scores,train_edge,test_edge,new_edge
     else:
         print('Train labels are excluded.')
-
-        scores=[i[0] for i in score_sort_toplist]        
-        rows=[i[1] for i in score_sort_toplist]
-        cols=[i[2] for i in score_sort_toplist]
-        gene1=[node_names[i[1]] for i in score_sort_toplist]
-        gene2=[node_names[i[2]] for i in score_sort_toplist]
-        train_edge=[0 for i in score_sort_toplist]
-
+        train_edge = [0 for _ in range(len(score_sort_toplist))]
         for i in score_sort_toplist:
+            scores.append(i[0])
+            row = i[1]
+            rows.append(row)
+            gene1.append(node_names[row])
+            col = i[2]
+            cols.append(col)
+            gene2.append(node_names[col])
             prediction_label_pair=(i[1],i[2])
 
             if prediction_label_pair in test_label_pairs: # To see if "prediction label pair" is in a set "prediction_label_pair"
@@ -243,23 +235,24 @@ def convert(score_sort_toplist,target_label_pairs,test_label_pairs,node_names,tr
                 new_edge.append(1)
 
         print('Completed conversion.')
-        return rows,cols,gene1,gene2,scores,train_edge,test_edge,new_edge
-        
+        # return rows,cols,gene1,gene2,scores,train_edge,test_edge,new_edge
+
+
 def process_table(rows,cols,gene1,gene2,scores,train_edge,test_edge,new_edge):
     # Prep pandas dataframe section 
     print('\n== Process curated prediction score to build a table ==')
     table=pd.DataFrame()
 
     # Add columns to dataframe table
-    table['row']=rows
-    table['col']=cols
-    table['gene1']=gene1
-    table['gene2']=gene2
-    table['score']=scores
-    table['train_edge']=train_edge
-    table['test_edge']=test_edge
-    table['new_edge']=new_edge
-    print('#table shape: ',table.shape)
+    table['row'] = pd.Series(rows)
+    table['col'] = pd.Series(cols)
+    table['gene1'] = pd.Series(gene1)
+    table['gene2'] = pd.Series(gene2)
+    table['score'] = pd.Series(scores)
+    table['train_edge'] = pd.Series(train_edge)
+    table['test_edge'] = pd.Series(test_edge)
+    table['new_edge'] = pd.Series(new_edge)
+    print('#table shape: ', table.shape)
 
     # assign score ranking
     table=table.assign(score_ranking=len(table.score)-stats.rankdata(table.score, method='max')+1)
@@ -296,6 +289,11 @@ def get_parser():
     print('args score rank: {0}'.format(args.scorerank))
     print('args train: '+args.train)
     return args
+
+
+def split_list(l, n):
+    for i in range(0, len(l), n):
+        yield l[i:i+n]
 
 
 def main():
@@ -344,31 +342,40 @@ def main():
     score_sort_toplist=sort_prediction_score(args.result,args.cv,target_label_pairs,test_label_pairs,args.scorerank,args.train)
 
     # convert score for dataframe
-    rows,cols,gene1,gene2,scores,train_edge,test_edge,new_edge = convert(score_sort_toplist,target_label_pairs,test_label_pairs,node_names,args.train)
+    n_proc = 5
+    pool = Pool(processes=n_proc)
+    split_score_sort_toplist = list(split_list(score_sort_toplist, n_proc))
+    with Manager() as manager:
+        scores, rows, cols, gene1, gene2, train_edge, test_edge, new_edge = [manager.list() for _ in range(8)]
+        convert_ = partial(convert, target_label_pairs=target_label_pairs, test_label_pairs=test_label_pairs,
+                           node_names=node_names, train=args.train, scores=scores, rows=rows, cols=cols, gene1=gene1,
+                           gene2=gene2, train_edge=train_edge, test_edge=test_edge, new_edge=new_edge)
+        pool.map(convert_, split_score_sort_toplist)
+    # rows,cols,gene1,gene2,scores,train_edge,test_edge,new_edge = convert(score_sort_toplist,target_label_pairs,test_label_pairs,node_names,args.train)
 
-    print('\n#rows: ',len(rows))
-    print('#cols: ',len(cols))
-    print('#gene1: ',len(gene1))
-    print('#gene2: ',len(gene2))
-    print('#scores: ',len(scores))
-    print('#train_edge: ',len(train_edge))
-    print('#test_edge: ',len(test_edge))
-    print('#new_edge: ',len(new_edge))
+        print('\n#rows: ',len(rows))
+        print('#cols: ',len(cols))
+        print('#gene1: ',len(gene1))
+        print('#gene2: ',len(gene2))
+        print('#scores: ',len(scores))
+        print('#train_edge: ',len(train_edge))
+        print('#test_edge: ',len(test_edge))
+        print('#new_edge: ',len(new_edge))
 
-    # process table
-    table_sort_score = process_table(rows,cols,gene1,gene2,scores,train_edge,test_edge,new_edge)
+        # process table
+        table_sort_score = process_table(rows, cols, gene1, gene2, scores, train_edge, test_edge, new_edge)
 
-    # write table
-    print('\n== Export the processed result as txt file ==')
-    print('output file path: '+args.output)
-    with open(args.output, 'w') as f:
-        table_sort_score.to_csv(f,sep='\t',header=True,index=False)
+        # write table
+        print('\n== Export the processed result as txt file ==')
+        print('output file path: '+args.output)
+        with open(args.output, 'w') as f:
+            table_sort_score.to_csv(f,sep='\t',header=True,index=False)
 
-    # measure time
-    elapsed_time=time.time() - start_time
-    print('\n#time:{0}'.format(elapsed_time)+' sec')
+        # measure time
+        elapsed_time=time.time() - start_time
+        print('\n#time:{0}'.format(elapsed_time)+' sec')
 
-    print('-- fin --\n')
+        print('-- fin --\n')
 
 
 if __name__ == '__main__':
