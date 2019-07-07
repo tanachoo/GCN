@@ -222,7 +222,8 @@ def get_parser():
     parser.add_argument('--cv', default=0, type=int, help="cross validation: select 0,1,2,3,4")
     parser.add_argument('--output', type=str, help="output:score.txt")
     parser.add_argument('--scorerank', default=10000, type=int, help='pick score ranking from 1 to score_cutoff_value')
-    parser.add_argument('--train', default='false', type=str, help="default: exclude train label at score ranking list")
+    parser.add_argument("-t", '--train', action="store_true", help="default: exclude train label at score ranking list")
+    parser.add_argument("-n", "--proc_num", type=int, default=1, help="a number of processors for multiprocessing.")
     args = parser.parse_args()
     print(f'\n== args summary ==\n'
           f'args result: {args.result}\n'
@@ -231,7 +232,8 @@ def get_parser():
           f'args cv: {args.cv}\n'
           f'args output: {args.output}\n'
           f'args score rank: {args.scorerank}\n'
-          f'args train: {args.train}')
+          f'args train: {args.train}\n'
+          f'args proc num: {args.proc_num}')
     return args
 
 
@@ -278,7 +280,7 @@ def main():
     score_sort_toplist = sort_prediction_score(args.result, args.cv, target_label_pairs, test_label_pairs,
                                                args.scorerank, args.train)
     # convert score for dataframe
-    n_proc = 4
+    n_proc = args.proc_num
     pool = Pool(processes=n_proc)
     split_score_sort_toplist = list(split_list(score_sort_toplist, n_proc))
     with Manager() as manager:
