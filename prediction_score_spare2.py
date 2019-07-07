@@ -50,7 +50,7 @@ def build_test_label_pairs(filename, cv):
           f'cv fold: {cv}\n')
     result_data = joblib.load(filename)
     test_labels = result_data[cv]['test_labels']
-    test_label_pairs = []  # store test-label-pair (tuple) as list
+    test_label_pairs = []
 
     for i in test_labels[0]:
         test_label_pair = (i[0], i[2])
@@ -75,7 +75,7 @@ def build_target_label_pairs(filename):  # args.dataset (input data jbl file)
           f'load: {filename}')
     input_data = joblib.load(filename)
     label_list = input_data['label_list']
-    target_label_pairs = []  # store all target-label-pair (tuple) as list
+    target_label_pairs = []
 
     for i in label_list[0]:
         label_pair = (i[0], i[2])
@@ -95,7 +95,6 @@ def build_target_label_pairs(filename):  # args.dataset (input data jbl file)
 def sort_prediction_score(filename, cv, target_label_pairs, test_label_pairs, scorerank, train):
     """ Sort prediction result array matrix and Set threshold """
     print('\n== Sort predisction score ==')
-    # Load data
     print(f'load: {filename}')
     with open(filename, 'rb') as f:  # add for test
         result_data = pickle.load(f)  # add for test
@@ -108,15 +107,12 @@ def sort_prediction_score(filename, cv, target_label_pairs, test_label_pairs, sc
           f'\nprep list of [(score,row,col),(),(),,,,] from prediction score results matrix...')
     dim_row = matrix.shape[0]
     dim_col = matrix.shape[1]
-    # Store prediction score as a set of (score,row,col) tuple
     score_row_col = [(matrix[row, col], row, col) for row in range(dim_row) for col in range(row+1, dim_col)]
 
     print(f'#scores as adopted: {len(score_row_col)}')  # 480577503
     # print('(should be 480577503...)')
     # Here need to delete CHEBI ID
-    # remove row CHEBI
     row_CHEBI_deleted = [i for i in score_row_col if i[1] < 3071 or i[1] > 14506]
-    # remove col CHEBI
     row_col_CHEBI_deleted = [i for i in row_CHEBI_deleted if i[2] < 3071 or i[2] > 14506]
     print(f'#scores as adopted post removal of CHEBI nodes: {len(row_col_CHEBI_deleted)}')
     
@@ -140,15 +136,10 @@ def sort_prediction_score(filename, cv, target_label_pairs, test_label_pairs, sc
               f'#score post score-rank cutoff: {len(score_sort_toplist)}\n'
               f'(should be same values...)\n'
               f'Completed to prep prediction score-ordered list including train labels.')
-
         return score_sort_toplist
-    
     else:
         print('\nTrain labels are excluded for preparing score-ordred list.')
-
         score_tmp = [i for i in score_sort if (i[1], i[2]) not in train_label_pairs]
-
-        # sort with a decending order
         score_tmp.sort(reverse=True)
         score_sort_toplist = score_tmp[:scorerank]
         print(f'#scores post removal of train labels: {len(score_tmp)}\n'
@@ -176,28 +167,17 @@ def convert(score_sort_toplist, target_label_pairs, test_label_pairs, node_names
             col = i[2]
             gene2 = node_names[col]
             prediction_label_pair = (row, col)
-
-            if prediction_label_pair in target_label_pairs:  # To see if "prefiction label pair" is in a set of "target label pairs"
-                # new_edge = 0  # If it's true, add "0" at new_edge, which means that "prediction label pair" is not new edge. Otherwise, add "1" at new_edge.
-                if prediction_label_pair in test_label_pairs:  # And, to see if "predoction_label_pair" is in a set of "test label pairs"
-                    # test_edge = 1  # If it's ture, add "1" at test_edge and "0" at train_edge
-                    # train_edge = 0
+            if prediction_label_pair in target_label_pairs:
+                if prediction_label_pair in test_label_pairs:
                     total_list.append([scores, row, col, gene1, gene2, 0, 1, 0])
                 else:
-                    # test_edge = 0  # Oherwise, add "0" at test_edge and "1" at train_edge
-                    # train_edge = 1
                     total_list.append([scores, row, col, gene1, gene2, 1, 0, 0])
             else:
-                # train_edge = 0
-                # test_edge = 0
-                # new_edge = 1
                 total_list.append([scores, row, col, gene1, gene2, 0, 0, 1])
 
         print('Completed conversion.')
-        # return rows,cols,gene1,gene2,scores,train_edge,test_edge,new_edge
     else:
         print('Train labels are excluded.')
-        # train_edge = [0 for _ in range(len(score_sort_toplist))]
         for i in score_sort_toplist:
             scores = i[0]
             row = i[1]
@@ -205,25 +185,16 @@ def convert(score_sort_toplist, target_label_pairs, test_label_pairs, node_names
             col = i[2]
             gene2 = node_names[col]
             prediction_label_pair = (row, col)
-
-            if prediction_label_pair in test_label_pairs:  # To see if "prediction label pair" is in a set "prediction_label_pair"
-                # test_edge.append(1)  # If it's ture, add "1" at test_edge and "0" at new_edge
-                # new_edge.append(0)
+            if prediction_label_pair in test_label_pairs:
                 total_list.append([scores, row, col, gene1, gene2, 0, 1, 0])
             else:
-                # test_edge.append(0)
-                # new_edge.append(1)
                 total_list.append([scores, row, col, gene1, gene2, 0, 0, 1])
-
         print('Completed conversion.')
-        # return rows,cols,gene1,gene2,scores,train_edge,test_edge,new_edge
 
 
 def process_table(rows, cols, gene1, gene2, scores, train_edge, test_edge, new_edge):
-    # Prep pandas dataframe section 
     print('\n== Process curated prediction score to build a table ==')
     table = pd.DataFrame()
-    # Add columns to dataframe table
     table['row'] = pd.Series(rows)
     table['col'] = pd.Series(cols)
     table['gene1'] = pd.Series(gene1)
@@ -233,12 +204,9 @@ def process_table(rows, cols, gene1, gene2, scores, train_edge, test_edge, new_e
     table['test_edge'] = pd.Series(test_edge)
     table['new_edge'] = pd.Series(new_edge)
     print('#table shape: ', table.shape)
-    # assign score ranking
     table = table.assign(score_ranking=len(table.score)-stats.rankdata(table.score, method='max')+1)
-    # sort table with high score order
     print('\nsort the table with score-descending order...')
     table_sort_score = table.sort_values(by='score', ascending=False)
-    # change column order
     table_sort_score = table_sort_score[['row', 'col', 'gene1', 'gene2', 'score', 'score_ranking', 'train_edge',
                                          'test_edge', 'new_edge']]
     print(f'#final table shape: {table.shape}\n'
@@ -301,15 +269,12 @@ def main():
         target_label_pairs = pickle.load(o3)
     # print(len(target_label_pairs))
 
-    # train label pair
     train_label_pairs = list(set(target_label_pairs) - set(test_label_pairs))
 
-    # Edge attribution summary
     print(f'\n== Summary of edge label data ==\n'
           f'#target_label_pairs: {len(target_label_pairs)}\n'
           f'#train_label_pairs: {len(train_label_pairs)}\n'
           f'#test_label_pairs: {len(test_label_pairs)}')
-    # sort with predisction score
     score_sort_toplist = sort_prediction_score(args.result, args.cv, target_label_pairs, test_label_pairs,
                                                args.scorerank, args.train)
     # convert score for dataframe
@@ -317,7 +282,6 @@ def main():
     pool = Pool(processes=n_proc)
     split_score_sort_toplist = list(split_list(score_sort_toplist, n_proc))
     with Manager() as manager:
-        # scores, rows, cols, gene1, gene2, train_edge, test_edge, new_edge = [manager.list() for _ in range(8)]
         total_list = manager.list()
         convert_ = partial(convert, target_label_pairs=target_label_pairs, test_label_pairs=test_label_pairs,
                            node_names=node_names, train=args.train, total_list=total_list)
@@ -340,12 +304,11 @@ def main():
               f'#new_edge: {len(new_edge)}')
 
         table_sort_score = process_table(rows, cols, gene1, gene2, scores, train_edge, test_edge, new_edge)
-        # write table
         print(f'\n== Export the processed result as txt file ==\n'
               f'output file path: {args.output}')
         with open(args.output, 'w') as f:
             table_sort_score.to_csv(f, sep='\t', header=True, index=False)
-        # measure time
+
         elapsed_time = time.time() - start_time
         print(f'\n#time:{elapsed_time} sec\n'
               f'-- fin --\n')
