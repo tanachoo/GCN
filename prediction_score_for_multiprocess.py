@@ -21,11 +21,8 @@ def build_node_name(filename):
     """ To convert node ID to gene/chemical name """
     print(f'\n== Prep node names list ==\n'
           f'load: {filename}')  # node data='../../processed_data/target0_20190425/dataset_node.csv'
-    node_names = []
     with open(filename, 'r') as f:
-        for l in f:
-            nodes = l.strip()
-            node_names.append(nodes)
+        node_names = [l.strip() for l in f]
     print(f'#node_names: {len(node_names)}')
     return node_names
 
