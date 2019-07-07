@@ -2,31 +2,17 @@
 # Write start: 5/13/2019
 # Updated: 7/3/2019
 
-## Script for converting prediction score to table
+# Script for converting prediction score to table
 
-# Usage: python prediction_score.py --result ./pool_result/target0_20190425/cv_info.gcn.jbl --dataset ./processed_data/target0_20190425/dataset.jbl \
-# --node ./processed_data/target0_20190425/dataset_node.csv --cv 0 --scorerank 15000 --train true --output ./pool_result/target0_20190425/score.txt
+import argparse
+from functools import partial
+from multiprocessing import Pool, Manager
+import pickle
+import time
 
 import joblib
 import pandas as pd
-import time
-import argparse
 from scipy import stats
-from multiprocessing import Pool, Manager
-from functools import partial
-import pickle
-
-
-class dotdict(dict):
-    __getattr__ = dict.get
-    __setattr__ = dict.__setitem__
-    __delattr__ = dict.__delitem__
-
-    def __getstate__(self):
-        return self.__dict__
-
-    def __setstate__(self, dict):
-        self.__dict__ = dict
 
 
 def build_node_name(filename):
@@ -155,11 +141,7 @@ def convert(score_sort_toplist, target_label_pairs, test_label_pairs, node_names
     let score-sorted list [(score,row,col),...] convert to table
     total_list = (scores, rows, cols, gene1, gene2, train_edge, test_edge, new_edge)
     """
-    print('\n== Start convesion of prediction scores ==')
-    train_label_pairs = list(set(target_label_pairs) - set(test_label_pairs))
-
     if train == 'true':
-        print('Train labels are included.')
         for i in score_sort_toplist:
             scores = i[0]
             row = i[1]
@@ -174,10 +156,7 @@ def convert(score_sort_toplist, target_label_pairs, test_label_pairs, node_names
                     total_list.append([scores, row, col, gene1, gene2, 1, 0, 0])
             else:
                 total_list.append([scores, row, col, gene1, gene2, 0, 0, 1])
-
-        print('Completed conversion.')
     else:
-        print('Train labels are excluded.')
         for i in score_sort_toplist:
             scores = i[0]
             row = i[1]
@@ -189,7 +168,6 @@ def convert(score_sort_toplist, target_label_pairs, test_label_pairs, node_names
                 total_list.append([scores, row, col, gene1, gene2, 0, 1, 0])
             else:
                 total_list.append([scores, row, col, gene1, gene2, 0, 0, 1])
-        print('Completed conversion.')
 
 
 def process_table(rows, cols, gene1, gene2, scores, train_edge, test_edge, new_edge):
@@ -263,7 +241,8 @@ def main():
           f'#test_label_pairs: {len(test_label_pairs)}')
     score_sort_toplist = sort_prediction_score(args.result, args.cv, target_label_pairs, test_label_pairs,
                                                args.scorerank, args.train)
-    # convert score for dataframe
+    print('\n== Start convesion of prediction scores ==')
+    print(f'Train labels are {["included" if args.train else "excluded"][0]}.')
     n_proc = args.proc_num
     pool = Pool(processes=n_proc)
     split_score_sort_toplist = list(split_list(score_sort_toplist, n_proc))
@@ -288,16 +267,17 @@ def main():
               f'#train_edge: {len(train_edge)}\n'
               f'#test_edge: {len(test_edge)}\n'
               f'#new_edge: {len(new_edge)}')
+        print('Completed conversion.')
 
-        table_sort_score = process_table(rows, cols, gene1, gene2, scores, train_edge, test_edge, new_edge)
-        print(f'\n== Export the processed result as txt file ==\n'
-              f'output file path: {args.output}')
-        with open(args.output, 'w') as f:
-            table_sort_score.to_csv(f, sep='\t', header=True, index=False)
+    table_sort_score = process_table(rows, cols, gene1, gene2, scores, train_edge, test_edge, new_edge)
+    print(f'\n== Export the processed result as txt file ==\n'
+          f'output file path: {args.output}')
+    with open(args.output, 'w') as f:
+        table_sort_score.to_csv(f, sep='\t', header=True, index=False)
 
-        elapsed_time = time.time() - start_time
-        print(f'\n#time:{elapsed_time} sec\n'
-              f'-- fin --\n')
+    elapsed_time = time.time() - start_time
+    print(f'\n#time:{elapsed_time} sec\n'
+          f'-- fin --\n')
 
 
 if __name__ == '__main__':
