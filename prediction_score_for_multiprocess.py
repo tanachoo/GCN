@@ -1,8 +1,10 @@
-# Author: yoshi
-# Write start: 5/13/2019
-# Updated: 7/3/2019
+"""
+File name: prediction_score_for_multiprocess.py
+Author: yoshi, shoichi
+Description: Script for converting prediction score to table
+Date: 7 July 2019
+"""
 
-# Script for converting prediction score to table
 
 import argparse
 from functools import partial
