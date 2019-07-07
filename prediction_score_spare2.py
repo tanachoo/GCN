@@ -246,31 +246,15 @@ def main():
     args = get_parser()
     start_time = time.time()
 
-    # node names
     node_names = build_node_name(args.node)
-    # f1 = open('./node_names.pkl', 'wb')
-    # pickle.dump(node_names, f1)
-    with open("./node_names.pkl", "rb") as o1, open("./test_label_pairs.pkl", "rb") as o2,\
-            open('./target_label_pairs.pkl', 'rb') as o3:
-        #node_names = pickle.load(o1)
-    # print(len(node_names))
-
-    # build test label pairs
-    # test_label_pairs = build_test_label_pairs(args.result,args.cv) # need to stay
-    # f2 = open('./test_label_pairs.pkl', 'wb')
-    # pickle.dump(test_label_pairs, f2)
-
-        test_label_pairs = pickle.load(o2)
-    # print(len(test_label_pairs))
-
+    with open("./test_label_pairs.pkl", "rb") as f:
+        # build test label pairs
+        # test_label_pairs = build_test_label_pairs(args.result,args.cv) # need to stay
+        # f2 = open('./test_label_pairs.pkl', 'wb')
+        # pickle.dump(test_label_pairs, f2)
+        test_label_pairs = pickle.load(f)
     # build all prediction target pairs
-    target_label_pairs=build_target_label_pairs(args.dataset)
-    # f3 = open('./target_label_pairs.pkl', 'wb')
-    # pickle.dump(target_label_pairs, f3)
-
-        #target_label_pairs = pickle.load(o3)
-    # print(len(target_label_pairs))
-
+    target_label_pairs = build_target_label_pairs(args.dataset)
     train_label_pairs = list(set(target_label_pairs) - set(test_label_pairs))
 
     print(f'\n== Summary of edge label data ==\n'
