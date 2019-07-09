@@ -112,7 +112,7 @@ def sort_prediction_score(filename, cv, target_label_pairs, test_label_pairs, sc
     # Prep target,test,train label list
     train_label_pairs = list(set(target_label_pairs) - set(test_label_pairs))
     
-    if train == 'true':
+    if train:
         print('\nTrain labels are included for preparing score-ordred list.\n'
               '#scores including train labels: {len(score_sort)}\n'
               'Cutoff top list by score-rank...\n')
@@ -140,7 +140,7 @@ def convert(score_sort_toplist, target_label_pairs, test_label_pairs, node_names
     let score-sorted list [(score,row,col),...] convert to table
     total_list = (scores, rows, cols, gene1, gene2, train_edge, test_edge, new_edge)
     """
-    if train == 'true':
+    if train:
         for i in score_sort_toplist:
             scores = i[0]
             row = i[1]
@@ -247,7 +247,7 @@ def main():
     split_score_sort_toplist = list(split_list(score_sort_toplist, n_proc))
     with Manager() as manager:
         total_list = manager.list()
-        convert_ = partial(convert, target_label_pairs=target_label_pairs, test_label_pairs=test_label_pairs,
+        convert_ = partial(convert, target_label_pairs=set(target_label_pairs), test_label_pairs=set(test_label_pairs),
                            node_names=node_names, train=args.train, total_list=total_list)
         pool.map(convert_, split_score_sort_toplist)
         scores = [l[0] for l in total_list]
