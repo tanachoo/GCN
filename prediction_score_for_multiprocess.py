@@ -16,6 +16,17 @@ import joblib
 import pandas as pd
 from scipy import stats
 
+class dotdict(dict):
+    __getattr__ = dict.get
+    __setattr__ = dict.__setitem__
+    __delattr__ = dict.__delitem__
+    
+    def __getstate__(self):
+        return self.__dict__
+    
+    def __setstate__(self, dict):
+        self.__dict__ = dict
+
 
 def build_node_name(filename):
     """ To convert node ID to gene/chemical name """
