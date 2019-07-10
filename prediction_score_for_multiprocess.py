@@ -53,7 +53,7 @@ def build_test_label_pairs(filename, cv):
         test_label_pair = tuple(sorted(test_label_pair))
         test_label_pairs.append(test_label_pair)
 
-    print(f'#test_label_pairs: {len(test_label_pairs)}'
+    print(f'#test_label_pairs: {len(test_label_pairs)}\n'
           f'Remove duplicate.')
     test_label_pairs = list(set(test_label_pairs))  # remove duplicated in list of test_label_pairs
     print(f'#duplicate-removed test_label_pairs: {len(test_label_pairs)}\n'
@@ -75,7 +75,7 @@ def build_target_label_pairs(filename):  # args.dataset (input data jbl file)
         label_pair = tuple(sorted(label_pair))
         target_label_pairs.append(label_pair)
 
-    print(f'#target_label_pairs: {len(target_label_pairs)}'
+    print(f'#target_label_pairs: {len(target_label_pairs)}\n'
           f'Remove duplicate.')
     target_label_pairs = list(set(target_label_pairs))  # remove duplicated in list of target_label_pairs
     print(f'#duplicate-removed target_label_pairs: {len(target_label_pairs)}\n'
