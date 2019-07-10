@@ -2,7 +2,7 @@
 File name: prediction_score_for_multiprocess.py
 Author: yoshi, shoichi
 Description: Script for converting prediction score to table
-Date: 7 July 2019
+Date: 10 July 2019
 """
 
 
@@ -43,7 +43,7 @@ def build_test_label_pairs(filename, cv):
     # import main result data (post caluculation jbl file)
     print(f'\n== Prep test label pairs list ==\n'
           f'load: {filename}\n'
-          f'cv fold: {cv}\n')
+          f'cv fold: {cv}')
     result_data = joblib.load(filename)
     test_labels = result_data[cv]['test_labels']
     test_label_pairs = []
@@ -53,8 +53,8 @@ def build_test_label_pairs(filename, cv):
         test_label_pair = tuple(sorted(test_label_pair))
         test_label_pairs.append(test_label_pair)
 
-    print(f'#test_label_pairs: {len(test_label_pairs)}\n'
-          f'\nRemove duplicate.')
+    print(f'#test_label_pairs: {len(test_label_pairs)}'
+          f'Remove duplicate.')
     test_label_pairs = list(set(test_label_pairs))  # remove duplicated in list of test_label_pairs
     print(f'#duplicate-removed test_label_pairs: {len(test_label_pairs)}\n'
           f'Completed to prep test label list.')
@@ -75,8 +75,8 @@ def build_target_label_pairs(filename):  # args.dataset (input data jbl file)
         label_pair = tuple(sorted(label_pair))
         target_label_pairs.append(label_pair)
 
-    print(f'#target_label_pairs: {len(target_label_pairs)}\n'
-          f'\nRemove duplicate.')
+    print(f'#target_label_pairs: {len(target_label_pairs)}'
+          f'Remove duplicate.')
     target_label_pairs = list(set(target_label_pairs))  # remove duplicated in list of target_label_pairs
     print(f'#duplicate-removed target_label_pairs: {len(target_label_pairs)}\n'
           f'Completed to prep target label list.')
@@ -93,7 +93,7 @@ def sort_prediction_score(filename, cv, target_label_pairs, test_label_pairs, sc
     print(f'cv fold: {cv}')
     # prediction = result_data[cv]['prediction_data']
     # matrix = prediction[0]
-    matrix = result_data  # aonly ctivate when test sample data
+    matrix = result_data  # only activate when test sample data
     print(f'prediction score matrix shape: {matrix.shape}\n'
           f'\nPrep list of [(score,row,col)] from prediction score results matrix.')
     dim_row = matrix.shape[0]
@@ -228,7 +228,7 @@ def main():
     start_time = time.time()
 
     node_names = build_node_name(args.node)
-    # test_label_pairs = build_test_label_pairs(args.result,args.cv) # main code
+    # test_label_pairs = build_test_label_pairs(args.result, args.cv) # main code
     with open("./test_label_pairs.pkl", "rb") as f:  # only activate when test sample data
         test_label_pairs = pickle.load(f)  # only activate when test sample data
     target_label_pairs = build_target_label_pairs(args.dataset)
