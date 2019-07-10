@@ -87,13 +87,13 @@ def sort_prediction_score(filename, cv, target_label_pairs, test_label_pairs, sc
     """ Sort prediction result array matrix and Set threshold """
     print('\n== Sort predisction score ==')
     print(f'load: {filename}')
-    with open(filename, 'rb') as f:  ## only activate when test sample data 
-        result_data = pickle.load(f)  ## only activate when test sample data
-    #result_data = joblib.load(filename)
+    with open(filename, 'rb') as f:  # only activate when test sample data
+        result_data = pickle.load(f)  # only activate when test sample data
+    # result_data = joblib.load(filename)
     print(f'cv fold: {cv}')
-    #prediction = result_data[cv]['prediction_data']
-    #matrix = prediction[0]
-    matrix = result_data  ## aonly ctivate when test sample data
+    # prediction = result_data[cv]['prediction_data']
+    # matrix = prediction[0]
+    matrix = result_data  # aonly ctivate when test sample data
     print(f'prediction score matrix shape: {matrix.shape}\n'
           f'\nPrep list of [(score,row,col)] from prediction score results matrix.')
     dim_row = matrix.shape[0]
@@ -123,7 +123,7 @@ def sort_prediction_score(filename, cv, target_label_pairs, test_label_pairs, sc
               f'Completed to prep prediction score-ordered list including train labels.')
         return score_sort_toplist
     else:
-        #print('(Train labels are excluded for preparing score-ordred list.)')
+        # print('(Train labels are excluded for preparing score-ordred list.)')
         score_tmp = [i for i in score_sort if (i[1], i[2]) not in train_label_pairs]
         score_tmp.sort(reverse=True)
         score_sort_toplist = score_tmp[:scorerank]
@@ -140,6 +140,7 @@ def convert(score_sort_toplist, target_label_pairs, test_label_pairs, node_names
     let score-sorted list [(score,row,col)...] convert to table
     total_list = (scores, rows, cols, gene1, gene2, train_edge, test_edge, new_edge)
     """
+    tmp_list = []
     if train:
         for i in score_sort_toplist:
             scores = i[0]
@@ -150,11 +151,11 @@ def convert(score_sort_toplist, target_label_pairs, test_label_pairs, node_names
             prediction_label_pair = (row, col)
             if prediction_label_pair in target_label_pairs:
                 if prediction_label_pair in test_label_pairs:
-                    total_list.append([scores, row, col, gene1, gene2, 0, 1, 0])
+                    tmp_list.append([scores, row, col, gene1, gene2, 0, 1, 0])
                 else:
-                    total_list.append([scores, row, col, gene1, gene2, 1, 0, 0])
+                    tmp_list.append([scores, row, col, gene1, gene2, 1, 0, 0])
             else:
-                total_list.append([scores, row, col, gene1, gene2, 0, 0, 1])
+                tmp_list.append([scores, row, col, gene1, gene2, 0, 0, 1])
     else:
         for i in score_sort_toplist:
             scores = i[0]
@@ -164,9 +165,10 @@ def convert(score_sort_toplist, target_label_pairs, test_label_pairs, node_names
             gene2 = node_names[col]
             prediction_label_pair = (row, col)
             if prediction_label_pair in test_label_pairs:
-                total_list.append([scores, row, col, gene1, gene2, 0, 1, 0])
+                tmp_list.append([scores, row, col, gene1, gene2, 0, 1, 0])
             else:
-                total_list.append([scores, row, col, gene1, gene2, 0, 0, 1])
+                tmp_list.append([scores, row, col, gene1, gene2, 0, 0, 1])
+    total_list.extend(tmp_list)
 
 
 def process_table(rows, cols, gene1, gene2, scores, train_edge, test_edge, new_edge):
@@ -181,7 +183,7 @@ def process_table(rows, cols, gene1, gene2, scores, train_edge, test_edge, new_e
     table['train_edge'] = pd.Series(train_edge)
     table['test_edge'] = pd.Series(test_edge)
     table['new_edge'] = pd.Series(new_edge)
-    #print('#table shape: ', table.shape)
+    # print('#table shape: ', table.shape)
     table = table.assign(score_ranking=len(table.score) - stats.rankdata(table.score, method='max') + 1)
     print('Sort the table with score-descending order.')
     table_sort_score = table.sort_values(by='score', ascending=False)
@@ -218,8 +220,7 @@ def get_parser():
 
 
 def split_list(l, n):
-    for i in range(0, len(l), n):
-        yield l[i:i+n]
+    return [l[i::n] for i in range(n)]
 
 
 def main():
@@ -227,9 +228,9 @@ def main():
     start_time = time.time()
 
     node_names = build_node_name(args.node)
-    #test_label_pairs = build_test_label_pairs(args.result,args.cv) # main code    
-    with open("./test_label_pairs.pkl", "rb") as f: ## only activate when test sample data
-        test_label_pairs = pickle.load(f) ## only activate when test sample data
+    # test_label_pairs = build_test_label_pairs(args.result,args.cv) # main code
+    with open("./test_label_pairs.pkl", "rb") as f:  # only activate when test sample data
+        test_label_pairs = pickle.load(f)  # only activate when test sample data
     target_label_pairs = build_target_label_pairs(args.dataset)
     train_label_pairs = list(set(target_label_pairs) - set(test_label_pairs))
 
@@ -244,7 +245,7 @@ def main():
     print(f'Train labels are {["included" if args.train else "excluded"][0]}.')
     n_proc = args.proc_num
     pool = Pool(processes=n_proc)
-    split_score_sort_toplist = list(split_list(score_sort_toplist, n_proc))
+    split_score_sort_toplist = split_list(score_sort_toplist, n_proc)
     with Manager() as manager:
         total_list = manager.list()
         convert_ = partial(convert, target_label_pairs=set(target_label_pairs), test_label_pairs=set(test_label_pairs),
