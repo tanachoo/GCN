@@ -2,7 +2,7 @@
 File name: prediction_score_for_multiprocess.py
 Author: yoshi, shoichi
 Description: Script for converting prediction score to table
-Date: 10 July 2019
+Date: 13 July 2019
 """
 
 
@@ -83,17 +83,17 @@ def build_target_label_pairs(filename):  # args.dataset (input data jbl file)
     return target_label_pairs
 
 
-def sort_prediction_score(filename, cv, target_label_pairs, test_label_pairs, scorerank, cutoff, train):
+def sort_prediction_score(filename, cv, target_label_pairs, test_label_pairs, scorerank, cutoff, train, edgetype):
     """ Sort prediction result array matrix and Set threshold """
     print('\n== Sort predisction score ==')
     print(f'load: {filename}')
-    with open(filename, 'rb') as f:  # only activate when test sample data
-        result_data = pickle.load(f)  # only activate when test sample data
-    # result_data = joblib.load(filename)
+    # with open(filename, 'rb') as f:  # only activate when test sample data
+    #     result_data = pickle.load(f)  # only activate when test sample data
+    result_data = joblib.load(filename)
     print(f'cv fold: {cv}')
-    # prediction = result_data[cv]['prediction_data']
-    # matrix = prediction[0]
-    matrix = result_data  # only activate when test sample data
+    prediction = result_data[cv]['prediction_data']
+    matrix = prediction[0]
+    # matrix = result_data  # only activate when test sample data
     print(f'prediction score matrix shape: {matrix.shape}\n'
           f'\nPrep list of [(score,row,col)] from prediction score results matrix.')
     dim_row = matrix.shape[0]
@@ -101,36 +101,51 @@ def sort_prediction_score(filename, cv, target_label_pairs, test_label_pairs, sc
     score_row_col = [(matrix[row, col], row, col) for row in range(dim_row) for col in range(row+1, dim_col)]
     print(f'#scores as adopted: {len(score_row_col)}')  # should be 480577503
 
-    # Here need to delete CHEBI ID
-    row_CHEBI_deleted = [i for i in score_row_col if i[1] < 3071 or i[1] > 14506]
-    row_col_CHEBI_deleted = [i for i in row_CHEBI_deleted if i[2] < 3071 or i[2] > 14506]
-    print(f'#scores as adopted post removal of CHEBI nodes: {len(row_col_CHEBI_deleted)}')
-    
+    if edgetype == 'ppi':
+        """ protein-protein """
+        print(f'Pick protein-protein interaction.')
+        ppi1 = [i for i in score_row_col if i[1] < 3071 or i[1] > 14506]
+        ppi = [i for i in ppi1 if i[2] < 3071 or i[2] > 14506]
+        print(f'#total protein-protein edge: {len(ppi)}\n') # should be 191423961
+        edgetype_selection_score = ppi
+
+    elif edgetype == 'pci':
+        """ protein-chemical """
+        print(f'Pick protein-chemical interaction.')
+        pci1 = [i for i in score_row_col if i[1] < 3071 and 3070 < i[2] < 14507]
+        pci2 = [i for i in score_row_col if 3070 < i[1] < 14507 and 14506 < i[2] < 31003]
+        pci = pci1 + pci2
+        prnt(f'#total protein-chemical edge: {len(pci)}\n') # should be 223768212
+        edgetype_selection_score = pci
+
+    elif edgetype == 'cci':
+        """ chemical-chemical """ 
+        print(f'Pick chemical-chemical interaction.')
+        cci = [i for i in score_row_col if 3070 < i[1] < 14507 and 3070 < i[2] < 14507]
+        print(f'#total chemical-chemical edge: {len(cci)}\n') # should be 65385330
+        edgetype_selection_score = cci
+
     # sort scores with descending order
-    print('\nSort scores and pre-pick toplist by cutoff value.')
-    row_col_CHEBI_deleted.sort(reverse=True)  # Sort list based on "score" with a decending order
-    score_sort = row_col_CHEBI_deleted[:cutoff]  # args.cutoff: Pick top list using arbitrary threshold
+    print('Sort scores and pre-pick toplist by cutoff value.')
+    edgetype_selection_score.sort(reverse=True)  # Sort list based on "score" with a decending order
+    score_sort = edgetype_selection_score[:cutoff]  # args.cutoff: Pick top list using arbitrary threshold
     print(f'#pre-picked top score list: {len(score_sort)}')
 
-    # Prep target,test,train label list
-    train_label_pairs = list(set(target_label_pairs) - set(test_label_pairs))
-    
     if train:
-        print(#f'(Train labels are included for preparing score-ordred list.)\n'
+        print(f'(Train labels are included for preparing score-ordred list.)\n'
               f'Pick toplist by scorerank.')
         score_sort_toplist = score_sort[:scorerank]  # args.scorerank: Select top score ranking to export
         print(f'#score post pick score-rank: {len(score_sort_toplist)}\n'
               f'Completed to prep prediction score-ordered list including train labels.')
         return score_sort_toplist
     else:
-        # print('(Train labels are excluded for preparing score-ordred list.)')
-        score_tmp = [i for i in score_sort if (i[1], i[2]) not in train_label_pairs]
+        print(f'(Train labels are excluded for preparing score-ordred list.)\n'
+              f'Pick toplist by scorerank.')
+        train_label_pairs = list(set(target_label_pairs) - set(test_label_pairs)) # Prep target,test,train label list
+        score_tmp = [i for i in score_sort if (i[1], i[2]) not in set(train_label_pairs)]
         score_tmp.sort(reverse=True)
         score_sort_toplist = score_tmp[:scorerank]
-        print(f'#scores post removal of train labels: {len(score_tmp)}\n'
-              f'score rank cutoff value: {scorerank}\n'
-              f'#src_score_sort_toplist: {len(score_sort_toplist)}\n'
-              f'(should be same values...)\n'
+        print(f'#score post pick score-rank: {len(score_sort_toplist)}\n'
               f'Completed to prep prediction score-ordered list w/o train labels.')
         return score_sort_toplist
 
@@ -194,6 +209,45 @@ def process_table(rows, cols, gene1, gene2, scores, train_edge, test_edge, new_e
     return table_sort_score
 
 
+def enrichment(target_label_pairs, test_label_pairs, table_sort_score, cv, train, edgetype):
+    print('\n== Calculate enrichment ==')
+    train_label_pairs = list(set(target_label_pairs) - set(test_label_pairs)) # prep train edges list
+
+    if train:
+        if edgetype == 'ppi':
+            total = 191423961
+        elif edgetype == 'pci':
+            total = 223768212
+        elif edgetype == 'cci':      
+            total = 65385330
+
+        total_wo_train = total - len(train_label_pairs) # remove train edges from total
+        total_test_edges = len(test_label_pairs)
+        table_wo_train = table_sort_score[table_sort_score.train_edge == 0] # prep table w/o train edges (remove train from the table)
+        print(f'Summary of edges attribution\n'
+              f'cv fold: {cv}\n'
+              f'#total as scored: {total}\n'
+              f'#total_w/o_train_edges: {total_wo_train}\n'
+              f'#total_target_edges: {len(target_label_pairs)}\n'
+              f'#total_train_edges: {len(train_label_pairs)}\n'
+              f'#total_test_edges: {len(test_label_pairs)}\n')
+
+        # enrichment calcucation
+        top = [0.1, 0.5, 1.0] # top: 0.1%, 0.5%, 1%, 3%, 5%
+        for i in top:
+            ratio = i*0.01
+            top_ratio = round(total_wo_train*ratio) # calculate the number of top list based on top%
+            table_wo_train_toplist = table_wo_train.iloc[:top_ratio,] # pick top list from the table w/o train edges
+            test_edges_in_toplist = len(table_wo_train_toplist[table_wo_train_toplist.test_edge == 1].index)
+            test_edges_enrichment = test_edges_in_toplist/total_test_edges
+            print(f'#top%: {i}\n'
+                  f'#top_ratio: {top_ratio}\n'
+                  f'#test_edges_in_toplist: {test_edges_in_toplist}\n'
+                  f'#test edges enrichment top{i}%: {test_edges_enrichment}\n')
+
+    else:
+        pass # built later...
+
 def get_parser():
     parser = argparse.ArgumentParser()
     parser.add_argument('--result', type=str, help="input result: gcn_cv.jbl")
@@ -205,6 +259,7 @@ def get_parser():
     parser.add_argument('--cutoff', default=10000, type=int, help='pre-pick score ranking from 1 to cutoff, should cutoff > scorerank')
     parser.add_argument("-t", '--train', action="store_true", help="default: exclude train label at score ranking list")
     parser.add_argument("-n", "--proc_num", type=int, default=1, help="a number of processors for multiprocessing.")
+    parser.add_argument('--edgetype', type=str, help="edgetype: ppi(protein-protein), pci(protein-chemical), cci(chemical-chemical)")
     args = parser.parse_args()
     print(f'\n== args summary ==\n'
           f'args result: {args.result}\n'
@@ -215,7 +270,8 @@ def get_parser():
           f'args scorerank: {args.scorerank}\n'
           f'args cutoff: {args.cutoff}\n'
           f'args train: {args.train}\n'
-          f'args proc num: {args.proc_num}')
+          f'args proc num: {args.proc_num}\n'
+          f'args edgetype: {args.edgetype}')
     return args
 
 
@@ -228,19 +284,13 @@ def main():
     start_time = time.time()
 
     node_names = build_node_name(args.node)
-    # test_label_pairs = build_test_label_pairs(args.result, args.cv) # main code
-    with open("./test_label_pairs.pkl", "rb") as f:  # only activate when test sample data
-        test_label_pairs = pickle.load(f)  # only activate when test sample data
+    test_label_pairs = build_test_label_pairs(args.result, args.cv) # main code
+    # with open("./test_label_pairs.pkl", "rb") as f:  # only activate when test sample data
+    #     test_label_pairs = pickle.load(f)  # only activate when test sample data
     target_label_pairs = build_target_label_pairs(args.dataset)
-    train_label_pairs = list(set(target_label_pairs) - set(test_label_pairs))
-
-    print(f'\n== Summary of edge label data ==\n'
-          f'#target_label_pairs: {len(target_label_pairs)}\n'
-          f'#train_label_pairs: {len(train_label_pairs)}\n'
-          f'#test_label_pairs: {len(test_label_pairs)}')
-    
     score_sort_toplist = sort_prediction_score(args.result, args.cv, target_label_pairs, test_label_pairs,
-                                               args.scorerank, args.cutoff, args.train)
+                                               args.scorerank, args.cutoff, args.train, args.edgetype)
+
     print('\n== Start convesion of prediction scores ==')
     print(f'Train labels are {["included" if args.train else "excluded"][0]}.')
     n_proc = args.proc_num
@@ -274,6 +324,8 @@ def main():
           f'output file path: {args.output}')
     with open(args.output, 'w') as f:
         table_sort_score.to_csv(f, sep='\t', header=True, index=False)
+
+    enrichment(target_label_pairs, test_label_pairs, table_sort_score, args.cv, args.train, args.edgetype)
 
     elapsed_time = time.time() - start_time
     print(f'\n#time:{elapsed_time} sec\n'
