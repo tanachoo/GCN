@@ -2,7 +2,7 @@
 File name: prediction_score_for_multiprocess.py
 Author: yoshi, shoichi
 Description: Script for converting prediction score to table
-Date: 13 July 2019
+Date: 15 July 2019
 """
 
 
@@ -87,13 +87,13 @@ def sort_prediction_score(filename, cv, target_label_pairs, test_label_pairs, sc
     """ Sort prediction result array matrix and Set threshold """
     print('\n== Sort predisction score ==')
     print(f'load: {filename}')
-    # with open(filename, 'rb') as f:  # only activate when test sample data
-    #     result_data = pickle.load(f)  # only activate when test sample data
-    result_data = joblib.load(filename)
+    with open(filename, 'rb') as f:  # only activate when test sample data
+        result_data = pickle.load(f)  # only activate when test sample data
+    # result_data = joblib.load(filename)
     print(f'cv fold: {cv}')
-    prediction = result_data[cv]['prediction_data']
-    matrix = prediction[0]
-    # matrix = result_data  # only activate when test sample data
+    # prediction = result_data[cv]['prediction_data']
+    # matrix = prediction[0]
+    matrix = result_data  # only activate when test sample data
     print(f'prediction score matrix shape: {matrix.shape}\n'
           f'\nPrep list of [(score,row,col)] from prediction score results matrix.')
     dim_row = matrix.shape[0]
@@ -115,7 +115,7 @@ def sort_prediction_score(filename, cv, target_label_pairs, test_label_pairs, sc
         pci1 = [i for i in score_row_col if i[1] < 3071 and 3070 < i[2] < 14507]
         pci2 = [i for i in score_row_col if 3070 < i[1] < 14507 and 14506 < i[2] < 31003]
         pci = pci1 + pci2
-        prnt(f'#total protein-chemical edge: {len(pci)}\n') # should be 223768212
+        print(f'#total protein-chemical edge: {len(pci)}\n') # should be 223768212
         edgetype_selection_score = pci
 
     elif edgetype == 'cci':
@@ -284,9 +284,9 @@ def main():
     start_time = time.time()
 
     node_names = build_node_name(args.node)
-    test_label_pairs = build_test_label_pairs(args.result, args.cv) # main code
-    # with open("./test_label_pairs.pkl", "rb") as f:  # only activate when test sample data
-    #     test_label_pairs = pickle.load(f)  # only activate when test sample data
+    # test_label_pairs = build_test_label_pairs(args.result, args.cv) # main code
+    with open("./test_label_pairs.pkl", "rb") as f:  # only activate when test sample data
+        test_label_pairs = pickle.load(f)  # only activate when test sample data
     target_label_pairs = build_target_label_pairs(args.dataset)
     score_sort_toplist = sort_prediction_score(args.result, args.cv, target_label_pairs, test_label_pairs,
                                                args.scorerank, args.cutoff, args.train, args.edgetype)
