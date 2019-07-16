@@ -10,11 +10,13 @@ import argparse
 from functools import partial
 from multiprocessing import Pool, Manager
 import pickle
+import pprint
 import time
 
 import joblib
 import pandas as pd
 from scipy import stats
+
 
 class dotdict(dict):
     __getattr__ = dict.get
@@ -189,15 +191,16 @@ def convert(score_sort_toplist, target_label_pairs, test_label_pairs, node_names
 def process_table(rows, cols, gene1, gene2, scores, train_edge, test_edge, new_edge):
     """ To build a table """
     print('\n== Process curated prediction score to build a table ==')
-    table = pd.DataFrame()
-    table['row'] = pd.Series(rows)
-    table['col'] = pd.Series(cols)
-    table['gene1'] = pd.Series(gene1)
-    table['gene2'] = pd.Series(gene2)
-    table['score'] = pd.Series(scores)
-    table['train_edge'] = pd.Series(train_edge)
-    table['test_edge'] = pd.Series(test_edge)
-    table['new_edge'] = pd.Series(new_edge)
+    table = pd.DataFrame({
+        "row": rows,
+        "col": cols,
+        "gene1": gene1,
+        "gene2": gene2,
+        "score": scores,
+        "train_edge": train_edge,
+        "test_edge": test_edge,
+        "new_edge": new_edge
+    })
     # print('#table shape: ', table.shape)
     table = table.assign(score_ranking=len(table.score) - stats.rankdata(table.score, method='max') + 1)
     print('Sort the table with score-descending order.')
@@ -221,9 +224,9 @@ def enrichment(target_label_pairs, test_label_pairs, table_sort_score, cv, train
         elif edgetype == 'cci':      
             total = 65385330
 
-        total_wo_train = total - len(train_label_pairs) # remove train edges from total
+        total_wo_train = total - len(train_label_pairs)  # remove train edges from total
         total_test_edges = len(test_label_pairs)
-        table_wo_train = table_sort_score[table_sort_score.train_edge == 0] # prep table w/o train edges (remove train from the table)
+        table_wo_train = table_sort_score[table_sort_score.train_edge == 0]  # prep table w/o train edges (remove train from the table)
         print(f'Summary of edges attribution\n'
               f'cv fold: {cv}\n'
               f'#total as scored: {total}\n'
@@ -233,11 +236,11 @@ def enrichment(target_label_pairs, test_label_pairs, table_sort_score, cv, train
               f'#total_test_edges: {len(test_label_pairs)}\n')
 
         # enrichment calcucation
-        top = [0.1, 0.5, 1.0] # top: 0.1%, 0.5%, 1%, 3%, 5%
+        top = [0.1, 0.5, 1.0]  # top: 0.1%, 0.5%, 1%, 3%, 5%
         for i in top:
             ratio = i*0.01
-            top_ratio = round(total_wo_train*ratio) # calculate the number of top list based on top%
-            table_wo_train_toplist = table_wo_train.iloc[:top_ratio,] # pick top list from the table w/o train edges
+            top_ratio = round(total_wo_train*ratio)  # calculate the number of top list based on top%
+            table_wo_train_toplist = table_wo_train.iloc[:top_ratio, ]  # pick top list from the table w/o train edges
             test_edges_in_toplist = len(table_wo_train_toplist[table_wo_train_toplist.test_edge == 1].index)
             test_edges_enrichment = test_edges_in_toplist/total_test_edges
             print(f'#top%: {i}\n'
@@ -247,6 +250,7 @@ def enrichment(target_label_pairs, test_label_pairs, table_sort_score, cv, train
 
     else:
         pass # built later...
+
 
 def get_parser():
     parser = argparse.ArgumentParser()
@@ -261,17 +265,9 @@ def get_parser():
     parser.add_argument("-n", "--proc_num", type=int, default=1, help="a number of processors for multiprocessing.")
     parser.add_argument('--edgetype', type=str, help="edgetype: ppi(protein-protein), pci(protein-chemical), cci(chemical-chemical)")
     args = parser.parse_args()
-    print(f'\n== args summary ==\n'
-          f'args result: {args.result}\n'
-          f'args dataset: {args.dataset}\n'
-          f'args node: {args.node}\n'
-          f'args cv: {args.cv}\n'
-          f'args output: {args.output}\n'
-          f'args scorerank: {args.scorerank}\n'
-          f'args cutoff: {args.cutoff}\n'
-          f'args train: {args.train}\n'
-          f'args proc num: {args.proc_num}\n'
-          f'args edgetype: {args.edgetype}')
+
+    print('\n== args summary ==')
+    pprint.pprint(vars(args))
     return args
 
 
