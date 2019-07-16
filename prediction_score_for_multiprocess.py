@@ -246,7 +246,7 @@ def enrichment(target_label_pairs, test_label_pairs, table_sort_score, cv, train
                   f'#test edges enrichment top{i}%: {test_edges_enrichment}\n')
 
     else:
-        pass # built later...
+        pass # build later...
 
 def get_parser():
     parser = argparse.ArgumentParser()
@@ -255,6 +255,7 @@ def get_parser():
     parser.add_argument('--node', type=str, help="input dataset node: dataset_node.csv")
     parser.add_argument('--cv', default=0, type=int, help="cross validation: select 0,1,2,3,4")
     parser.add_argument('--output', type=str, help="output:score.txt")
+    parser.add_argument('--output_pkl', type=str, help="output:score.pkl")
     parser.add_argument('--scorerank', default=10000, type=int, help='pick score ranking from 1 to scorerank')
     parser.add_argument('--cutoff', default=10000, type=int, help='pre-pick score ranking from 1 to cutoff, should cutoff > scorerank')
     parser.add_argument("-t", '--train', action="store_true", help="default: exclude train label at score ranking list")
@@ -267,6 +268,7 @@ def get_parser():
           f'args node: {args.node}\n'
           f'args cv: {args.cv}\n'
           f'args output: {args.output}\n'
+          f'args output_pkl: {args.output_pkl}\n'
           f'args scorerank: {args.scorerank}\n'
           f'args cutoff: {args.cutoff}\n'
           f'args train: {args.train}\n'
@@ -320,11 +322,13 @@ def main():
         print('Completed conversion.')
 
     table_sort_score = process_table(rows, cols, gene1, gene2, scores, train_edge, test_edge, new_edge)
-    print(f'\n== Export the processed result as txt file ==\n'
+    print(f'\n== Export the processed result as txt/pkl file ==\n'
           f'output file path: {args.output}')
     with open(args.output, 'w') as f:
         table_sort_score.to_csv(f, sep='\t', header=True, index=False)
-
+    print(f'output pkl path: {args.output_pkl}')
+    table_sort_score.to_pickle(args.output_pkl)
+    
     enrichment(target_label_pairs, test_label_pairs, table_sort_score, args.cv, args.train, args.edgetype)
 
     elapsed_time = time.time() - start_time
