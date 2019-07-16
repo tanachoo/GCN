@@ -323,13 +323,13 @@ def main():
 
     table_sort_score = process_table(rows, cols, gene1, gene2, scores, train_edge, test_edge, new_edge)
     print(f'\n== Export the processed result as txt/pkl file ==\n'
-          f'output file path: {args.output}')
+          f'output txt file path: {args.output}\n'
+          f'output pkl file path: {args.output_pkl}')
     with open(args.output, 'w') as f:
         table_sort_score.to_csv(f, sep='\t', header=True, index=False)
-    print(f'output pkl path: {args.output_pkl}')
     table_sort_score.to_pickle(args.output_pkl)
     
-    enrichment(target_label_pairs, test_label_pairs, table_sort_score, args.cv, args.train, args.edgetype)
+    #enrichment(target_label_pairs, test_label_pairs, table_sort_score, args.cv, args.train, args.edgetype)
 
     elapsed_time = time.time() - start_time
     print(f'\n#time:{elapsed_time} sec\n'
