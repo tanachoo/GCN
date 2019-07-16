@@ -11,6 +11,7 @@ from functools import partial
 from multiprocessing import Pool, Manager
 import pickle
 import pprint
+import sys
 import time
 
 import joblib
@@ -85,7 +86,7 @@ def build_target_label_pairs(filename):  # args.dataset (input data jbl file)
     return target_label_pairs
 
 
-def sort_prediction_score(filename, cv, target_label_pairs, test_label_pairs, scorerank, cutoff, train, edgetype):
+def sort_prediction_score(filename, cv, target_label_pairs, test_label_pairs, score_rank, cutoff, train, edge_type):
     """ Sort prediction result array matrix and Set threshold """
     print('\n== Sort predisction score ==')
     print(f'load: {filename}')
@@ -103,7 +104,7 @@ def sort_prediction_score(filename, cv, target_label_pairs, test_label_pairs, sc
     score_row_col = [(matrix[row, col], row, col) for row in range(dim_row) for col in range(row+1, dim_col)]
     print(f'#scores as adopted: {len(score_row_col)}')  # should be 480577503
 
-    if edgetype == 'ppi':
+    if edge_type == 'ppi':
         """ protein-protein """
         print(f'Pick protein-protein interaction.')
         ppi1 = [i for i in score_row_col if i[1] < 3071 or i[1] > 14506]
@@ -111,7 +112,7 @@ def sort_prediction_score(filename, cv, target_label_pairs, test_label_pairs, sc
         print(f'#total protein-protein edge: {len(ppi)}\n') # should be 191423961
         edgetype_selection_score = ppi
 
-    elif edgetype == 'pci':
+    elif edge_type == 'pci':
         """ protein-chemical """
         print(f'Pick protein-chemical interaction.')
         pci1 = [i for i in score_row_col if i[1] < 3071 and 3070 < i[2] < 14507]
@@ -120,12 +121,16 @@ def sort_prediction_score(filename, cv, target_label_pairs, test_label_pairs, sc
         print(f'#total protein-chemical edge: {len(pci)}\n') # should be 223768212
         edgetype_selection_score = pci
 
-    elif edgetype == 'cci':
+    elif edge_type == 'cci':
         """ chemical-chemical """ 
         print(f'Pick chemical-chemical interaction.')
         cci = [i for i in score_row_col if 3070 < i[1] < 14507 and 3070 < i[2] < 14507]
         print(f'#total chemical-chemical edge: {len(cci)}\n') # should be 65385330
         edgetype_selection_score = cci
+
+    else:
+        print("[ERROR] Choose edge_type from 'ppi', 'pci', 'cci'")
+        sys.exit(1)
 
     # sort scores with descending order
     print('Sort scores and pre-pick toplist by cutoff value.')
@@ -135,18 +140,18 @@ def sort_prediction_score(filename, cv, target_label_pairs, test_label_pairs, sc
 
     if train:
         print(f'(Train labels are included for preparing score-ordred list.)\n'
-              f'Pick toplist by scorerank.')
-        score_sort_toplist = score_sort[:scorerank]  # args.scorerank: Select top score ranking to export
+              f'Pick toplist by score_rank.')
+        score_sort_toplist = score_sort[:score_rank]  # args.score_rank: Select top score ranking to export
         print(f'#score post pick score-rank: {len(score_sort_toplist)}\n'
               f'Completed to prep prediction score-ordered list including train labels.')
         return score_sort_toplist
     else:
         print(f'(Train labels are excluded for preparing score-ordred list.)\n'
-              f'Pick toplist by scorerank.')
+              f'Pick toplist by score_rank.')
         train_label_pairs = list(set(target_label_pairs) - set(test_label_pairs)) # Prep target,test,train label list
         score_tmp = [i for i in score_sort if (i[1], i[2]) not in set(train_label_pairs)]
         score_tmp.sort(reverse=True)
-        score_sort_toplist = score_tmp[:scorerank]
+        score_sort_toplist = score_tmp[:score_rank]
         print(f'#score post pick score-rank: {len(score_sort_toplist)}\n'
               f'Completed to prep prediction score-ordered list w/o train labels.')
         return score_sort_toplist
@@ -212,17 +217,20 @@ def process_table(rows, cols, gene1, gene2, scores, train_edge, test_edge, new_e
     return table_sort_score
 
 
-def enrichment(target_label_pairs, test_label_pairs, table_sort_score, cv, train, edgetype):
+def enrichment(target_label_pairs, test_label_pairs, table_sort_score, cv, train, edge_type):
     print('\n== Calculate enrichment ==')
     train_label_pairs = list(set(target_label_pairs) - set(test_label_pairs)) # prep train edges list
 
     if train:
-        if edgetype == 'ppi':
+        if edge_type == 'ppi':
             total = 191423961
-        elif edgetype == 'pci':
+        elif edge_type == 'pci':
             total = 223768212
-        elif edgetype == 'cci':      
+        elif edge_type == 'cci':
             total = 65385330
+        else:
+            print("[ERROR] Choose edge_type from 'ppi', 'pci', 'cci'")
+            sys.exit(1)
 
         total_wo_train = total - len(train_label_pairs)  # remove train edges from total
         total_test_edges = len(test_label_pairs)
@@ -259,11 +267,11 @@ def get_parser():
     parser.add_argument('--node', type=str, help="input dataset node: dataset_node.csv")
     parser.add_argument('--cv', default=0, type=int, help="cross validation: select 0,1,2,3,4")
     parser.add_argument('--output', type=str, help="output:score.txt")
-    parser.add_argument('--scorerank', default=10000, type=int, help='pick score ranking from 1 to scorerank')
-    parser.add_argument('--cutoff', default=10000, type=int, help='pre-pick score ranking from 1 to cutoff, should cutoff > scorerank')
+    parser.add_argument('--score_rank', default=10000, type=int, help='pick score ranking from 1 to score_rank')
+    parser.add_argument('--cutoff', default=10000, type=int, help='pre-pick score ranking from 1 to cutoff, should cutoff > score_rank')
     parser.add_argument("-t", '--train', action="store_true", help="default: exclude train label at score ranking list")
     parser.add_argument("-n", "--proc_num", type=int, default=1, help="a number of processors for multiprocessing.")
-    parser.add_argument('--edgetype', type=str, help="edgetype: ppi(protein-protein), pci(protein-chemical), cci(chemical-chemical)")
+    parser.add_argument('--edge_type', type=str, help="edge_type: ppi(protein-protein), pci(protein-chemical), cci(chemical-chemical)")
     args = parser.parse_args()
 
     print('\n== args summary ==')
@@ -285,7 +293,7 @@ def main():
         test_label_pairs = pickle.load(f)  # only activate when test sample data
     target_label_pairs = build_target_label_pairs(args.dataset)
     score_sort_toplist = sort_prediction_score(args.result, args.cv, target_label_pairs, test_label_pairs,
-                                               args.scorerank, args.cutoff, args.train, args.edgetype)
+                                               args.score_rank, args.cutoff, args.train, args.edge_type)
 
     print('\n== Start convesion of prediction scores ==')
     print(f'Train labels are {["included" if args.train else "excluded"][0]}.')
@@ -321,7 +329,7 @@ def main():
     with open(args.output, 'w') as f:
         table_sort_score.to_csv(f, sep='\t', header=True, index=False)
 
-    enrichment(target_label_pairs, test_label_pairs, table_sort_score, args.cv, args.train, args.edgetype)
+    enrichment(target_label_pairs, test_label_pairs, table_sort_score, args.cv, args.train, args.edge_type)
 
     elapsed_time = time.time() - start_time
     print(f'\n#time:{elapsed_time} sec\n'
