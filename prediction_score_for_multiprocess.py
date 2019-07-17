@@ -257,7 +257,7 @@ def enrichment(target_label_pairs, test_label_pairs, table_sort_score, cv, train
                   f'#test edges enrichment top{i}%: {test_edges_enrichment}\n')
 
     else:
-        pass # built later...
+        pass # build later...
 
 
 def get_parser():
@@ -267,13 +267,13 @@ def get_parser():
     parser.add_argument('--node', type=str, help="input dataset node: dataset_node.csv")
     parser.add_argument('--cv', default=0, type=int, help="cross validation: select 0,1,2,3,4")
     parser.add_argument('--output', type=str, help="output:score.txt")
+    parser.add_argument('--output_pkl', type=str, help="output:score.pkl")
     parser.add_argument('--score_rank', default=10000, type=int, help='pick score ranking from 1 to score_rank')
     parser.add_argument('--cutoff', default=10000, type=int, help='pre-pick score ranking from 1 to cutoff, should cutoff > score_rank')
     parser.add_argument("-t", '--train', action="store_true", help="default: exclude train label at score ranking list")
     parser.add_argument("-n", "--proc_num", type=int, default=1, help="a number of processors for multiprocessing.")
     parser.add_argument('--edge_type', type=str, help="edge_type: ppi(protein-protein), pci(protein-chemical), cci(chemical-chemical)")
     args = parser.parse_args()
-
     print('\n== args summary ==')
     pprint.pprint(vars(args))
     return args
@@ -324,12 +324,14 @@ def main():
         print('Completed conversion.')
 
     table_sort_score = process_table(rows, cols, gene1, gene2, scores, train_edge, test_edge, new_edge)
-    print(f'\n== Export the processed result as txt file ==\n'
-          f'output file path: {args.output}')
+    print(f'\n== Export the processed result as txt/pkl file ==\n'
+          f'output txt file path: {args.output}\n'
+          f'output pkl file path: {args.output_pkl}')
     with open(args.output, 'w') as f:
         table_sort_score.to_csv(f, sep='\t', header=True, index=False)
-
-    enrichment(target_label_pairs, test_label_pairs, table_sort_score, args.cv, args.train, args.edge_type)
+          
+    table_sort_score.to_pickle(args.output_pkl)
+    #enrichment(target_label_pairs, test_label_pairs, table_sort_score, args.cv, args.train, args.edge_type)
 
     elapsed_time = time.time() - start_time
     print(f'\n#time:{elapsed_time} sec\n'
