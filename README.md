@@ -1,4 +1,4 @@
-# GCN analysis Program for convertion of link prediction score on ip/distmult/gcn
+# Link Prediciton analysis for convertion of prediction score on ip/distmult/gcn
 
 
 ## TEST
