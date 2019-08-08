@@ -44,5 +44,6 @@ node data (--node): `dataset_node.csv`
 
 ## NOTE
 Need to change code slightly between test and main modes on.  
-To switch these two mode, just turn on/off the commemt out codes below in the main script.   
+To switch these two mode, just turn on/off the commemt out codes below in the main script.  
+Default is **TEST mode**.  
 `#only activate when test sample data` 
