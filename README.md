@@ -3,8 +3,8 @@
 
 ## TEST
 1. Prepare three data below on a same directory where the main program (prediction_score_for_multiprocess.py) stays.  
-`dataset.jbl (node_names.pkl for test)`
-`dataset_node.csv (test_label_pairs.pkl for test)`
+`dataset.jbl (node_names.pkl for more simple test)`  
+`dataset_node.csv (test_label_pairs.pkl for more simple test)`  
 `target_label_pairs.pkl`  
 
 2. Select result test data  
@@ -30,8 +30,8 @@ node data (--node): `dataset_node.csv`
 
 2. Set args  
 --cv: cross validation  
---score_rank: 20000000 (top 10%), 10000000(top 5%)  
---cut_off:  20000000 (top 10%), 10000000(top 5%)  
+--score_rank: 20000000 (top 10%), 10000000 (top 5%)  
+--cut_off:  20000000 (top 10%), 10000000 (top 5%)  
 --train: include train label  
 --output: set txt output file name and path  
 --output_pkl: set pkl output file name and path  
@@ -40,3 +40,9 @@ node data (--node): `dataset_node.csv`
 
 3. Run  
 `sh run_prediction_score.sh`  
+
+
+## NOTE
+Need to change code slightly between test and main modes on.  
+To switch these two mode, just turn on/off the commemt out codes below in the main script.   
+`#only activate when test sample data` 
