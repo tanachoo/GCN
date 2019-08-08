@@ -39,7 +39,7 @@ node data (--node): `dataset_node.csv`
 --edge_type: ppi(protein protein interaction), pci(protein chemical interaction), cci(chemical chemical interaction)  
 
 3. Run  
-`sh run_prediction_score.sh`  
+`sh run_prediction_score.sh ip2/distmult2/gcn2`  
 
 
 ## NOTE
