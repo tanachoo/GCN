@@ -108,13 +108,13 @@ def sort_prediction_score(filename, cv, target_label_pairs, test_label_pairs, sc
     if edge_type == 'ppi':
         """ protein-protein """
         print(f'Pick protein-protein interaction.')
-        #ppi1 = [i for i in score_row_col if i[1] < 3071 or i[1] > 14506]
-        #ppi = [i for i in ppi1 if i[2] < 3071 or i[2] > 14506]
-        #print(f'#total protein-protein edge: {len(ppi)}\n') # should be 191423961
-        #edgetype_selection_score = ppi
-        print(f'#total protein-protein edge: {len(ppi)}\n') # should be 182414550
+        # ppi1 = [i for i in score_row_col if i[1] < 3071 or i[1] > 14506]
+        # ppi = [i for i in ppi1 if i[2] < 3071 or i[2] > 14506]
+        # print(f'#total protein-protein edge: {len(ppi)}\n') # should be 191423961
+        # edgetype_selection_score = ppi
+        print(f'#total protein-protein edge: {len(score_row_col)}\n') # should be 182414550
         edgetype_selection_score = score_row_col
-    '''
+    
     elif edge_type == 'pci':
         """ protein-chemical """
         print(f'Pick protein-chemical interaction.')
@@ -130,7 +130,7 @@ def sort_prediction_score(filename, cv, target_label_pairs, test_label_pairs, sc
         cci = [i for i in score_row_col if 3070 < i[1] < 14507 and 3070 < i[2] < 14507]
         print(f'#total chemical-chemical edge: {len(cci)}\n') # should be 65385330
         edgetype_selection_score = cci
-    '''
+    
     else:
         print("[ERROR] Choose edge_type from 'ppi', 'pci', 'cci'")
         sys.exit(1)
@@ -226,14 +226,12 @@ def enrichment(target_label_pairs, test_label_pairs, table_sort_score, cv, train
 
     if train:
         if edge_type == 'ppi':
-            #total = 191423961 # for all dataset (target 0-12)
+            # total = 191423961 # for all dataset (target 0-12)
             total = 182414550 # for only ppi dataset
-        '''
         elif edge_type == 'pci':
             total = 223768212
         elif edge_type == 'cci':
             total = 65385330
-        '''
         else:
             print("[ERROR] Choose edge_type from 'ppi', 'pci', 'cci'")
             sys.exit(1)
